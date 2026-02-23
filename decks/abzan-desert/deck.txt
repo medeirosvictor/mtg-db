@@ -1,86 +1,86 @@
-1 Abraded Bluffs
-1 Ancient Greenwarden
-1 Angel of Indemnity
-1 Angel of the Ruins
-1 Arcane Signet
-1 Avenger of Zendikar
-1 Bitter Reunion
-1 Bovine Intervention
-1 Bristling Backwoods
-1 Cactus Preserve
-1 Cataclysmic Prospecting
-1 Chromatic Lantern
-1 Command Tower
-1 Conduit Pylons
-1 Crawling Sensation
-1 Creosote Heath
-1 Decimate
-1 Descend upon the Sinful
-1 Desert of the Fervent
-1 Desert of the Indomitable
-1 Desert of the True
-1 Dune Chanter
-1 Dunes of the Dead
-1 Eccentric Farmer
-1 Electric Revelation
-1 Elvish Rejuvenator
-1 Embrace the Unknown
-1 Escape to the Wilds
-1 Evolving Wilds
-1 Explore
-7 Forest
-1 Genesis Hydra
-1 Harrow
-1 Hashep Oasis
-1 Hazezon, Shaper of Sand
-1 Heaven/Earth
-1 Hour of Promise
-1 Jungle Shrine
-1 Kirri, Talented Sprout
-1 Krosan Verge
-1 Magmatic Insight
-1 Map the Frontier
-1 Marshal's Anthem
-1 Mirage Mesa
-4 Mountain
-1 Nantuko Cultivator
-1 Nesting Dragon
-1 Omnath, Locus of Rage
-1 Oracle of Mul Daya
-1 Painted Bluffs
-1 Path to Exile
-1 Perennial Behemoth
-1 Perpetual Timepiece
-6 Plains
-1 Ramunap Excavator
-1 Ramunap Ruins
-1 Requisition Raid
-1 Return of the Wildspeaker
-1 Rumbleweed
-1 Sand Scout
-1 Satyr Wayfinder
-1 Scaretiller
-1 Scattered Groves
-1 Scavenger Grounds
-1 Scute Swarm
-1 Sevinne's Reclamation
-1 Shefet Dunes
-1 Sheltered Thicket
-1 Skullwinder
-1 Sol Ring
-1 Springbloom Druid
-1 Sun Titan
-1 Sunscorched Divide
-1 Swiftfoot Boots
-1 Terramorphic Expanse
-1 The Mending of Dominaria
-1 Thrilling Discovery
-1 Titania, Protector of Argoth
-1 Turntimber Sower
-1 Unholy Heat
-1 Valorous Stance
-1 Vengeful Regrowth
-1 Winding Way
-1 World Shaper
-1 Wreck and Rebuild
-1 Yuma, Proud Protector
+1x Abraded Bluffs
+1x Ancient Greenwarden
+1x Angel of Indemnity
+1x Angel of the Ruins
+1x Arcane Signet
+1x Avenger of Zendikar
+1x Bitter Reunion
+1x Bovine Intervention
+1x Bristling Backwoods
+1x Cactus Preserve
+1x Cataclysmic Prospecting
+1x Chromatic Lantern
+1x Command Tower
+1x Conduit Pylons
+1x Crawling Sensation
+1x Creosote Heath
+1x Decimate
+1x Descend upon the Sinful
+1x Desert of the Fervent
+1x Desert of the Indomitable
+1x Desert of the True
+1x Dune Chanter
+1x Dunes of the Dead
+1x Eccentric Farmer
+1x Electric Revelation
+1x Elvish Rejuvenator
+1x Embrace the Unknown
+1x Escape to the Wilds
+1x Evolving Wilds
+1x Explore
+7x Forest
+1x Genesis Hydra
+1x Harrow
+1x Hashep Oasis
+1x Hazezon, Shaper of Sand #commander
+1x Heaven/Earth
+1x Hour of Promise
+1x Jungle Shrine
+1x Kirri, Talented Sprout
+1x Krosan Verge
+1x Magmatic Insight
+1x Map the Frontier
+1x Marshal's Anthem
+1x Mirage Mesa
+4x Mountain
+1x Nantuko Cultivator
+1x Nesting Dragon
+1x Omnath, Locus of Rage
+1x Oracle of Mul Daya
+1x Painted Bluffs
+1x Path to Exile
+1x Perennial Behemoth
+1x Perpetual Timepiece
+6x Plains
+1x Ramunap Excavator
+1x Ramunap Ruins
+1x Requisition Raid
+1x Return of the Wildspeaker
+1x Rumbleweed
+1x Sand Scout
+1x Satyr Wayfinder
+1x Scaretiller
+1x Scattered Groves
+1x Scavenger Grounds
+1x Scute Swarm
+1x Sevinne's Reclamation
+1x Shefet Dunes
+1x Sheltered Thicket
+1x Skullwinder
+1x Sol Ring
+1x Springbloom Druid
+1x Sun Titan
+1x Sunscorched Divide
+1x Swiftfoot Boots
+1x Terramorphic Expanse
+1x The Mending of Dominaria
+1x Thrilling Discovery
+1x Titania, Protector of Argoth
+1x Turntimber Sower
+1x Unholy Heat
+1x Valorous Stance
+1x Vengeful Regrowth
+1x Winding Way
+1x World Shaper
+1x Wreck and Rebuild
+1x Yuma, Proud Protector

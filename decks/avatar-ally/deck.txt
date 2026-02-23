@@ -1,102 +1,102 @@
-1 Aang and Katara (TLE) 69
-1 Aang, Airbending Master (TLE) 74
-1 Aang, at the Crossroads / Aang, Destined Savior (TLA) 203
-1 Aang, Swift Savior / Aang and La, Ocean's Fury (TLA) 347
-1 Aang's Iceberg (TLA) 5
-1 Agadeem Occultist (WWK) 48
-1 Airbender Ascension (TLA) 6
-1 Airbender's Reversal (TLA) 7
-1 Annie Joins Up (OTJ) 191
-1 Appa, Steadfast Guardian (TLA) 316
-1 Appa, the Vigilant (TLE) 62
-1 Arcane Denial (PLST) CMA-30
-1 Arcane Signet (TLE) 315
-1 Arid Mesa (MH2) 244
-1 Austere Command (2XM) 7
-1 Avatar Aang / Aang, Master of Elements (TLA) 207
-1 Avatar's Wrath (TLA) 12
-1 Bala Ged Recovery / Bala Ged Sanctuary (PLST) ZNR-180
-1 Beast Within (DSC) 80
-1 Beastcaller Savant (BFZ) 170
-1 Binding the Old Gods (EOC) 52
-1 Blood Crypt (RNA) 245
-1 Bloodstained Mire (KTK) 230
-1 Boiling Rock Rioter (TLA) 372
-1 Breeding Pool (RNA) 246
-1 Chaos Warp (FIC) 291
-1 City of Brass (2X2) 321
-1 Command Tower (NEC) 167
-1 Earth King's Lieutenant (TLA) 217
-1 Earthen Ally (TLA) 377
-1 Earthshape (TLE) 67
-1 Elemental Bond (TDC) 254
-1 Exotic Orchard (EOC) 159
-1 Farseek (TDC) 255
-1 Fellwar Stone (CMM) 382
-1 Fire Lord Zuko (TLA) 315
-1 Flooded Strand (KTK) 233
-1 Forest (TLA) 291
-1 Garruk's Uprising (BLC) 219
-1 General Tazri (OGW) 19
-1 Godless Shrine (EOE) 254
-1 Great Divide Guide (TLA) 181
-1 Hakoda, Selfless Commander (PTLA) 23s *F*
-1 Hallowed Fountain (ECL) 265
-1 Harabaz Druid (PLST) WWK-105
-1 Haru, Hidden Talent (TLA) 182
-1 Inspired Insurgent (TLE) 77
-1 Iroh, Dragon of the West (TLE) 194
-1 Island (TLA) 288
-1 Jasmine Dragon Tea Shop (TLA) 390
-1 Jetmir's Garden (PLST) SNC-250
-1 Kabira Evangel (ZEN) 15
-1 Kalastria Healer (BFZ) 114
-1 Katara, Bending Prodigy (TLA) 59
-1 Katara, the Fearless (TLA) 350
-1 Katara, Water Tribe's Hope (TLA) 231
-1 Katara, Waterbending Master (TLE) 93
-1 Ketria Triome (PLST) IKO-250
-1 Mai and Zuko (TLE) 68
-1 Mana Confluence (JOU) 163
-1 Marsh Flats (MH2) 476
-1 Misty Rainforest (MM3) 240
-1 Momo, Friendly Flier (TLA) 394 *F*
-1 Moonmist (PLST) ISD-195
-1 Mountain (TLA) 290
-1 Nature's Lore (S99) 136
-1 North Pole Patrol (TLA) 65
-1 Overgrown Tomb (RTR) 243
-1 Path of Ancestry (TDC) 382
-1 Plains (TLA) 287
-1 Polluted Delta (MH3) 224
-1 Professor Zei, Anthropologist (TLA) 238
-1 Raugrin Triome (IKO) 251
-1 Sacred Foundry (GTC) 245
-1 Scalding Tarn (MH2) 254
-1 Sea Gate Loremaster (ZEN) 63
-1 Shadowbringers (FCA) 51
-1 Sokka, Lateral Strategist (TLA) 241
-1 Sokka, Tenacious Tactician (TLA) 242
-1 Sol Ring (TLE) 316
-1 South Pole Voyager (TLA) 35
-1 Spara's Headquarters (SNC) 257
-1 Steam Vents (GRN) 257
-1 Stomping Ground (EOE) 258
-1 Swamp (TLA) 289
-1 Swiftfoot Boots (TLE) 317
-1 Swords to Plowshares (VOC) 99
-1 Tale of Momo (TLE) 86
-1 Temple Garden (ECL) 268
-1 The Blue Spirit (TLE) 178
-1 The Cave of Two Lovers (TLA) 126
-1 The Rise of Sozin / Fire Lord Sozin (TLA) 117
-1 Three Visits (OTC) 209
-1 Toph, Hardheaded Teacher (TLA) 384
-1 Tuktuk Scrapper (WWK) 94
-1 Venat, Heart of Hydaelyn / Hydaelyn, the Mothercrystal (FIN) 329
-1 Verdant Catacombs (MH2) 260
-1 Wartime Protestors (TLA) 160
-1 Watery Grave (EOE) 261
-1 Windswept Heath (KTK) 248
-1 Wooded Foothills (KTK) 249
-1 Yue, the Moon Spirit (TLA) 83
+1x Aang and Katara (TLE) 69
+1x Aang, Airbending Master (TLE) 74
+1x Aang, at the Crossroads / Aang, Destined Savior (TLA) 203
+1x Aang, Swift Savior / Aang and La, Ocean's Fury (TLA) 347
+1x Aang's Iceberg (TLA) 5
+1x Agadeem Occultist (WWK) 48
+1x Airbender Ascension (TLA) 6
+1x Airbender's Reversal (TLA) 7
+1x Annie Joins Up (OTJ) 191
+1x Appa, Steadfast Guardian (TLA) 316
+1x Appa, the Vigilant (TLE) 62
+1x Arcane Denial (PLST) CMA-30
+1x Arcane Signet (TLE) 315
+1x Arid Mesa (MH2) 244
+1x Austere Command (2XM) 7
+1x Avatar Aang / Aang, Master of Elements (TLA) 207 #commander
+1x Avatar's Wrath (TLA) 12
+1x Bala Ged Recovery / Bala Ged Sanctuary (PLST) ZNR-180
+1x Beast Within (DSC) 80
+1x Beastcaller Savant (BFZ) 170
+1x Binding the Old Gods (EOC) 52
+1x Blood Crypt (RNA) 245
+1x Bloodstained Mire (KTK) 230
+1x Boiling Rock Rioter (TLA) 372
+1x Breeding Pool (RNA) 246
+1x Chaos Warp (FIC) 291
+1x City of Brass (2X2) 321
+1x Command Tower (NEC) 167
+1x Earth King's Lieutenant (TLA) 217
+1x Earthen Ally (TLA) 377
+1x Earthshape (TLE) 67
+1x Elemental Bond (TDC) 254
+1x Exotic Orchard (EOC) 159
+1x Farseek (TDC) 255
+1x Fellwar Stone (CMM) 382
+1x Fire Lord Zuko (TLA) 315
+1x Flooded Strand (KTK) 233
+1x Forest (TLA) 291
+1x Garruk's Uprising (BLC) 219
+1x General Tazri (OGW) 19
+1x Godless Shrine (EOE) 254
+1x Great Divide Guide (TLA) 181
+1x Hakoda, Selfless Commander (PTLA) 23s *F*
+1x Hallowed Fountain (ECL) 265
+1x Harabaz Druid (PLST) WWK-105
+1x Haru, Hidden Talent (TLA) 182
+1x Inspired Insurgent (TLE) 77
+1x Iroh, Dragon of the West (TLE) 194
+1x Island (TLA) 288
+1x Jasmine Dragon Tea Shop (TLA) 390
+1x Jetmir's Garden (PLST) SNC-250
+1x Kabira Evangel (ZEN) 15
+1x Kalastria Healer (BFZ) 114
+1x Katara, Bending Prodigy (TLA) 59
+1x Katara, the Fearless (TLA) 350
+1x Katara, Water Tribe's Hope (TLA) 231
+1x Katara, Waterbending Master (TLE) 93
+1x Ketria Triome (PLST) IKO-250
+1x Mai and Zuko (TLE) 68
+1x Mana Confluence (JOU) 163
+1x Marsh Flats (MH2) 476
+1x Misty Rainforest (MM3) 240
+1x Momo, Friendly Flier (TLA) 394 *F*
+1x Moonmist (PLST) ISD-195
+1x Mountain (TLA) 290
+1x Nature's Lore (S99) 136
+1x North Pole Patrol (TLA) 65
+1x Overgrown Tomb (RTR) 243
+1x Path of Ancestry (TDC) 382
+1x Plains (TLA) 287
+1x Polluted Delta (MH3) 224
+1x Professor Zei, Anthropologist (TLA) 238
+1x Raugrin Triome (IKO) 251
+1x Sacred Foundry (GTC) 245
+1x Scalding Tarn (MH2) 254
+1x Sea Gate Loremaster (ZEN) 63
+1x Shadowbringers (FCA) 51
+1x Sokka, Lateral Strategist (TLA) 241
+1x Sokka, Tenacious Tactician (TLA) 242
+1x Sol Ring (TLE) 316
+1x South Pole Voyager (TLA) 35
+1x Spara's Headquarters (SNC) 257
+1x Steam Vents (GRN) 257
+1x Stomping Ground (EOE) 258
+1x Swamp (TLA) 289
+1x Swiftfoot Boots (TLE) 317
+1x Swords to Plowshares (VOC) 99
+1x Tale of Momo (TLE) 86
+1x Temple Garden (ECL) 268
+1x The Blue Spirit (TLE) 178
+1x The Cave of Two Lovers (TLA) 126
+1x The Rise of Sozin / Fire Lord Sozin (TLA) 117
+1x Three Visits (OTC) 209
+1x Toph, Hardheaded Teacher (TLA) 384
+1x Tuktuk Scrapper (WWK) 94
+1x Venat, Heart of Hydaelyn / Hydaelyn, the Mothercrystal (FIN) 329
+1x Verdant Catacombs (MH2) 260
+1x Wartime Protestors (TLA) 160
+1x Watery Grave (EOE) 261
+1x Windswept Heath (KTK) 248
+1x Wooded Foothills (KTK) 249
+1x Yue, the Moon Spirit (TLA) 83

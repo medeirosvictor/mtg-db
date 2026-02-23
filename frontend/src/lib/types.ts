@@ -35,3 +35,20 @@ export interface Deck {
   wishlist: Card[];
   cardCount: number;
 }
+
+export interface CollectionInfo {
+  path: string;
+  label: string;
+  lastOpened: string;
+  isActive: boolean;
+  isValid: boolean;
+}
+
+export interface AppState {
+  hasCollection: boolean;
+  collectionPath: string;
+  collectionLabel: string;
+  collectionValid: boolean;
+  collections: CollectionInfo[] | null;
+  needsSetup: boolean;
+}
