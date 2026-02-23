@@ -16,6 +16,7 @@ export interface Card {
   setCode?: string;
   collectorNumber?: string;
   foil?: boolean;
+  tags?: string[];
 }
 
 export interface DeckInfo {

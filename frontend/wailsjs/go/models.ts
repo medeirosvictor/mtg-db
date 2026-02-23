@@ -6,6 +6,7 @@ export namespace deck {
 	    setCode?: string;
 	    collectorNumber?: string;
 	    foil?: boolean;
+	    tags?: string[];
 	
 	    static createFrom(source: any = {}) {
 	        return new Card(source);
@@ -18,6 +19,7 @@ export namespace deck {
 	        this.setCode = source["setCode"];
 	        this.collectorNumber = source["collectorNumber"];
 	        this.foil = source["foil"];
+	        this.tags = source["tags"];
 	    }
 	}
 	export class DeckInfo {

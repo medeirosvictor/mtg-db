@@ -8,3 +8,5 @@ export function GetAllDecks():Promise<Array<main.DeckSummary>>;
 export function GetDeck(arg1:string):Promise<deck.Deck>;
 
 export function ReloadDecks():Promise<Array<main.DeckSummary>>;
+
+export function ToggleCardTag(arg1:string,arg2:string,arg3:string):Promise<deck.Deck>;

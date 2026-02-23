@@ -13,3 +13,7 @@ export function GetDeck(arg1) {
 export function ReloadDecks() {
   return window['go']['main']['App']['ReloadDecks']();
 }
+
+export function ToggleCardTag(arg1, arg2, arg3) {
+  return window['go']['main']['App']['ToggleCardTag'](arg1, arg2, arg3);
+}

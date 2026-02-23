@@ -134,6 +134,89 @@ func (a *App) ReloadDecks() []DeckSummary {
 	return a.GetAllDecks()
 }
 
+// ToggleCardTag toggles a tag on a card in a deck and writes to disk.
+// Returns the updated deck, or nil on error.
+func (a *App) ToggleCardTag(slug string, cardName string, tag string) *deck.Deck {
+	if a.config == nil {
+		return nil
+	}
+
+	deckDir := filepath.Join(a.config.DecksDir(), slug)
+	deckPath := filepath.Join(deckDir, "deck.txt")
+
+	// Find the deck in memory
+	var deckIdx int = -1
+	for i, d := range a.decks {
+		if d.Slug == slug {
+			deckIdx = i
+			break
+		}
+	}
+	if deckIdx == -1 {
+		return nil
+	}
+
+	d := &a.decks[deckIdx]
+
+	// Find the card and toggle the tag
+	found := false
+	for i := range d.Cards {
+		if strings.EqualFold(d.Cards[i].Name, cardName) {
+			found = true
+			if d.Cards[i].HasTag(tag) {
+				// Remove tag
+				var newTags []string
+				for _, t := range d.Cards[i].Tags {
+					if t != tag {
+						newTags = append(newTags, t)
+					}
+				}
+				d.Cards[i].Tags = newTags
+			} else {
+				// For commander: enforce max 2
+				if tag == deck.TagCommander {
+					commanders := deck.GetCommanders(d.Cards)
+					if len(commanders) >= 2 {
+						// Already at max, don't add
+						return d
+					}
+				}
+				d.Cards[i].Tags = append(d.Cards[i].Tags, tag)
+			}
+			break
+		}
+	}
+	if !found {
+		return nil
+	}
+
+	// Write updated deck.txt
+	if err := deck.WriteDeckFile(deckPath, d.Cards); err != nil {
+		fmt.Fprintf(os.Stderr, "error writing deck file: %v\n", err)
+		return nil
+	}
+
+	// Update commander in info from tags
+	commanders := deck.GetCommanders(d.Cards)
+	if len(commanders) > 0 {
+		d.Info.Commander = strings.Join(commanders, " / ")
+	} else {
+		// If no commander tags, re-read from info.md
+		info, err := deck.ParseInfoFile(filepath.Join(deckDir, "info.md"))
+		if err == nil {
+			d.Info.Commander = info.Commander
+		}
+	}
+
+	// Recalculate card count
+	d.CardCount = 0
+	for _, c := range d.Cards {
+		d.CardCount += c.Quantity
+	}
+
+	return d
+}
+
 // normalizeStatus extracts a clean status label.
 func normalizeStatus(raw string) string {
 	lower := strings.ToLower(raw)

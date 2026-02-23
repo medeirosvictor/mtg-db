@@ -6,17 +6,36 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 )
 
 // Card represents a single card entry parsed from a deck file.
 type Card struct {
-	Quantity        int    `json:"quantity"`
-	Name            string `json:"name"`
-	SetCode         string `json:"setCode,omitempty"`
-	CollectorNumber string `json:"collectorNumber,omitempty"`
-	Foil            bool   `json:"foil,omitempty"`
+	Quantity        int      `json:"quantity"`
+	Name            string   `json:"name"`
+	SetCode         string   `json:"setCode,omitempty"`
+	CollectorNumber string   `json:"collectorNumber,omitempty"`
+	Foil            bool     `json:"foil,omitempty"`
+	Tags            []string `json:"tags,omitempty"`
+}
+
+// Tag constants.
+const (
+	TagCommander = "commander"
+	TagProxy     = "proxy"
+	TagWishlist  = "wishlist"
+)
+
+// HasTag returns true if the card has the given tag.
+func (c Card) HasTag(tag string) bool {
+	for _, t := range c.Tags {
+		if t == tag {
+			return true
+		}
+	}
+	return false
 }
 
 // DeckInfo represents metadata parsed from info.md.
@@ -36,6 +55,20 @@ type Deck struct {
 	Cards     []Card   `json:"cards"`
 	Wishlist  []Card   `json:"wishlist"`
 	CardCount int      `json:"cardCount"`
+}
+
+// tagRegex matches #tag tokens at the end of a line.
+var tagRegex = regexp.MustCompile(`\s+#([a-zA-Z][a-zA-Z0-9_-]*)`)
+
+// extractTags strips #tag tokens from a line and returns the cleaned line + tags.
+func extractTags(line string) (string, []string) {
+	var tags []string
+	matches := tagRegex.FindAllStringSubmatch(line, -1)
+	for _, m := range matches {
+		tags = append(tags, strings.ToLower(m[1]))
+	}
+	cleaned := tagRegex.ReplaceAllString(line, "")
+	return strings.TrimSpace(cleaned), tags
 }
 
 // cardLineRegex handles all known formats:
@@ -64,7 +97,10 @@ func ParseCardLine(line string) (Card, error) {
 		return Card{}, fmt.Errorf("skip: empty or comment")
 	}
 
-	matches := cardLineRegex.FindStringSubmatch(line)
+	// Extract tags before parsing the rest
+	cleaned, tags := extractTags(line)
+
+	matches := cardLineRegex.FindStringSubmatch(cleaned)
 	if matches == nil {
 		return Card{}, fmt.Errorf("could not parse line: %q", line)
 	}
@@ -80,7 +116,7 @@ func ParseCardLine(line string) (Card, error) {
 	if collectorNum == "" {
 		collectorNum = strings.TrimSpace(matches[5]) // {num} variant
 	}
-	foil := strings.Contains(line, "*F*")
+	foil := strings.Contains(cleaned, "*F*")
 
 	return Card{
 		Quantity:        qty,
@@ -88,6 +124,7 @@ func ParseCardLine(line string) (Card, error) {
 		SetCode:         setCode,
 		CollectorNumber: collectorNum,
 		Foil:            foil,
+		Tags:            tags,
 	}, nil
 }
 
@@ -163,6 +200,111 @@ func ParseInfoFile(path string) (DeckInfo, error) {
 	return info, nil
 }
 
+// WriteInfoFile writes the deck metadata back to info.md.
+func WriteInfoFile(path string, info DeckInfo) error {
+	var lines []string
+	if info.Title != "" {
+		lines = append(lines, "# "+info.Title)
+		lines = append(lines, "")
+	}
+	if info.Status != "" {
+		lines = append(lines, "- **Status:** "+info.Status)
+	}
+	if info.Colors != "" {
+		lines = append(lines, "- **Colors:** "+info.Colors)
+	}
+	if info.Commander != "" {
+		lines = append(lines, "- **Commander:** "+info.Commander)
+	}
+	if info.Strategy != "" {
+		lines = append(lines, "- **Strategy:** "+info.Strategy)
+	}
+	if info.Universe != "" {
+		lines = append(lines, "- **Universe:** "+info.Universe)
+	}
+	lines = append(lines, "") // trailing newline
+
+	return os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0o644)
+}
+
+// FormatCardLine formats a Card back to a text line for writing to deck.txt.
+func FormatCardLine(c Card) string {
+	var sb strings.Builder
+
+	sb.WriteString(fmt.Sprintf("%d", c.Quantity))
+
+	// Use "1x" format for consistency
+	sb.WriteString("x ")
+	sb.WriteString(c.Name)
+
+	if c.SetCode != "" {
+		sb.WriteString(" (")
+		sb.WriteString(c.SetCode)
+		sb.WriteString(")")
+		if c.CollectorNumber != "" {
+			sb.WriteString(" ")
+			sb.WriteString(c.CollectorNumber)
+		}
+	}
+
+	if c.Foil {
+		sb.WriteString(" *F*")
+	}
+
+	// Append tags
+	for _, tag := range c.Tags {
+		sb.WriteString(" #")
+		sb.WriteString(tag)
+	}
+
+	return sb.String()
+}
+
+// WriteDeckFile writes all cards to a deck.txt file.
+func WriteDeckFile(path string, cards []Card) error {
+	var lines []string
+	for _, c := range cards {
+		lines = append(lines, FormatCardLine(c))
+	}
+	// Trailing newline
+	content := strings.Join(lines, "\n") + "\n"
+	return os.WriteFile(path, []byte(content), 0o644)
+}
+
+// SetCardTag adds or removes a tag on a card in a deck file.
+// Returns the updated list of cards.
+func SetCardTag(cards []Card, cardName string, tag string, enabled bool) []Card {
+	for i := range cards {
+		if strings.EqualFold(cards[i].Name, cardName) {
+			if enabled {
+				if !cards[i].HasTag(tag) {
+					cards[i].Tags = append(cards[i].Tags, tag)
+				}
+			} else {
+				var newTags []string
+				for _, t := range cards[i].Tags {
+					if t != tag {
+						newTags = append(newTags, t)
+					}
+				}
+				cards[i].Tags = newTags
+			}
+		}
+	}
+	return cards
+}
+
+// GetCommanders returns the names of cards tagged as commander in a deck.
+func GetCommanders(cards []Card) []string {
+	var commanders []string
+	for _, c := range cards {
+		if c.HasTag(TagCommander) {
+			commanders = append(commanders, c.Name)
+		}
+	}
+	return commanders
+}
+
 // LoadDeck loads a complete deck from a directory (deck.txt, info.md, wishlist.txt).
 func LoadDeck(dir string) (Deck, error) {
 	slug := filepath.Base(dir)
@@ -183,6 +325,13 @@ func LoadDeck(dir string) (Deck, error) {
 	cardCount := 0
 	for _, c := range cards {
 		cardCount += c.Quantity
+	}
+
+	// Derive commander from #commander tags if present, otherwise use info.md
+	commanders := GetCommanders(cards)
+	if len(commanders) > 0 {
+		sort.Strings(commanders)
+		info.Commander = strings.Join(commanders, " / ")
 	}
 
 	// Parse wishlist.txt (optional)
