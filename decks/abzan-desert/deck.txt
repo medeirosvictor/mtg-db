@@ -1,4 +1,3 @@
-White Black Green
 1 Abraded Bluffs
 1 Ancient Greenwarden
 1 Angel of Indemnity
@@ -85,4 +84,3 @@ White Black Green
 1 World Shaper
 1 Wreck and Rebuild
 1 Yuma, Proud Protector
-

@@ -1,4 +1,3 @@
-Green Blue
 1 Aether Gale
 1 Arcane Signet
 1 Arixmethes, Slumbering Isle
@@ -72,4 +71,3 @@ Green Blue
 1 Yedora, Grave Gardener
 1 Zimone's Hypothesis
 1 Zimone, Mystery Unraveler
-
