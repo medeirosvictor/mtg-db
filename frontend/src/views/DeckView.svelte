@@ -1,6 +1,15 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import type { Deck, Card } from '../lib/types';
+  import { 
+    fuzzyMatch, 
+    isBasicLand, 
+    cardToText, 
+    sortCards, 
+    filterCards, 
+    calculateTotalPrice, 
+    getCommanderNames 
+  } from '../lib/cardUtils';
   import { GetDeck, GetDeckBasic, ToggleCardTag, UpdateCardText } from '../../wailsjs/go/app/App';
   import DeckHeader from './DeckView/DeckHeader.svelte';
   import DeckToolbar from './DeckView/DeckToolbar.svelte';
@@ -71,12 +80,6 @@
     }
   }
 
-  function fuzzyMatch(text: string, query: string): boolean {
-    const lower = text.toLowerCase();
-    const words = query.toLowerCase().split(/\s+/).filter(w => w.length > 0);
-    return words.every(word => lower.includes(word));
-  }
-
   onMount(async () => {
     await loadDeck();
   });
@@ -125,30 +128,6 @@
     return notFoundCards.has(name.toLowerCase());
   }
 
-  function isBasicLand(name: string): boolean {
-    const basics = ['plains', 'island', 'swamp', 'mountain', 'forest'];
-    return basics.includes(name.toLowerCase());
-  }
-
-  function cardToText(card: Card): string {
-    let line = `${card.quantity}x ${card.name}`;
-    if (card.setCode) {
-      line += ` (${card.setCode})`;
-      if (card.collectorNumber) {
-        line += ` ${card.collectorNumber}`;
-      }
-    }
-    if (card.foil) {
-      line += ' *F*';
-    }
-    if (card.tags && card.tags.length > 0) {
-      for (const tag of card.tags) {
-        line += ` #${tag}`;
-      }
-    }
-    return line;
-  }
-
   function startEditing(card: Card) {
     editingCard = card.name;
     editValue = cardToText(card);
@@ -195,45 +174,14 @@
   }
 
   // Derived state
-  $: allSortedCards = deck?.cards
-    ? [...deck.cards].sort((a, b) => {
-        const aCmd = (a.tags || []).includes('commander');
-        const bCmd = (b.tags || []).includes('commander');
-        if (aCmd !== bCmd) return aCmd ? -1 : 1;
-        const aBasic = isBasicLand(a.name);
-        const bBasic = isBasicLand(b.name);
-        if (aBasic !== bBasic) return aBasic ? 1 : -1;
-        return a.name.localeCompare(b.name);
-      })
-    : [];
-
-  $: sortedCards = searchQuery.trim()
-    ? allSortedCards.filter(c => {
-        const haystack = [
-          c.name,
-          c.setCode || '',
-          c.scryFall?.typeLine || '',
-          c.scryFall?.oracleText || '',
-          ...(c.tags || []),
-        ].join(' ');
-        return fuzzyMatch(haystack, searchQuery);
-      })
-    : allSortedCards;
+  $: allSortedCards = deck?.cards ? sortCards(deck.cards) : [];
+  $: sortedCards = filterCards(allSortedCards, searchQuery);
 
   $: allWishlistCards = deck?.wishlist || [];
-  $: wishlistCards = searchQuery.trim()
-    ? allWishlistCards.filter(c => fuzzyMatch(c.name, searchQuery))
-    : allWishlistCards;
-  $: commanders = deck?.cards?.filter(c => (c.tags || []).includes('commander')) || [];
-  $: commanderNames = commanders.map(c => c.name).join(' / ');
-  $: displayCommander = commanderNames || deck?.info?.commander || 'None set';
+  $: wishlistCards = filterCards(allWishlistCards, searchQuery);
+  $: displayCommander = getCommanderNames(deck?.cards || []) || deck?.info?.commander || 'None set';
 
-  $: totalPrice = deck?.cards?.reduce((sum, card) => {
-    const isProxy = (card.tags || []).includes('proxy');
-    if (isProxy) return sum;
-    const price = card.scryFall?.priceUsd ? parseFloat(card.scryFall.priceUsd) : 0;
-    return sum + (price * card.quantity);
-  }, 0) || 0;
+  $: totalPrice = calculateTotalPrice(deck?.cards || []);
 
   async function toggleTag(cardName: string, tag: string) {
     if (!deck) return;
