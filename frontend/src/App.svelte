@@ -10,6 +10,7 @@
   let appState: AppState | null = null;
   let currentView = 'home';
   let currentSlug = '';
+  let deckListKey = 0;
 
   onMount(async () => {
     try {
@@ -20,8 +21,14 @@
   });
 
   function handleNavigate(event: CustomEvent<{ view: string; slug?: string }>) {
+    const wasOnDeck = currentView === 'deck';
     currentView = event.detail.view;
     currentSlug = event.detail.slug || '';
+    
+    // If going back to home from deck view, refresh the deck list
+    if (wasOnDeck && currentView === 'home') {
+      deckListKey++;
+    }
   }
 
   async function handleCollectionChanged() {
@@ -45,7 +52,7 @@
         on:collectionChanged={handleCollectionChanged}
       />
     </header>
-    {#key appState.collectionPath}
+    {#key appState.collectionPath + deckListKey}
       <DeckList on:navigate={handleNavigate} />
     {/key}
   </div>
