@@ -1,31 +1,30 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  import { AddCards } from '../../wailsjs/go/app/App';
-
-  export let slug: string;
+  import { CreateDeckFromImport } from '../../wailsjs/go/app/App';
 
   const dispatch = createEventDispatcher();
 
-  let cardInput = '';
+  let title = '';
+  let input = '';
   let loading = false;
   let error = '';
 
-  async function handleSubmit() {
-    if (!cardInput.trim()) return;
+  async function handleImport() {
+    if (!title.trim() || !input.trim()) return;
 
     loading = true;
     error = '';
 
     try {
-      const result = await AddCards(slug, cardInput);
-      if (result === '') {
-        dispatch('cardsAdded');
-        dispatch('close');
+      const result = await CreateDeckFromImport(title.trim(), input.trim());
+      if (result.startsWith('error:')) {
+        error = result.slice(6);
       } else {
-        error = result;
+        // result is the new deck slug
+        dispatch('created', { slug: result });
       }
     } catch (e) {
-      error = `Error: ${e}`;
+      error = `Import failed: ${e}`;
     } finally {
       loading = false;
     }
@@ -36,28 +35,55 @@
       dispatch('close');
     }
   }
+
+  function detectInputType(text: string): string {
+    const trimmed = text.trim();
+    if (/moxfield\.com\/decks\//.test(trimmed)) return '🔗 Moxfield URL detected';
+    if (/archidekt\.com\/decks\//.test(trimmed)) return '🔗 Archidekt URL detected';
+    const lines = trimmed.split('\n').filter(l => l.trim().length > 0);
+    if (lines.length > 0) return `📝 ${lines.length} line${lines.length > 1 ? 's' : ''} of card text`;
+    return '';
+  }
+
+  $: inputHint = detectInputType(input);
 </script>
 
 <svelte:window on:keydown={handleKeydown} />
 
-<div class="modal-backdrop" on:click={() => dispatch('close')} on:keydown={(e) => e.key === 'Enter' && dispatch('close')}>
+<div class="modal-backdrop" on:click={() => dispatch('close')} on:keydown={(e) => e.key === 'Escape' && dispatch('close')}>
   <div class="modal" on:click|stopPropagation role="dialog" aria-modal="true">
     <div class="modal-header">
-      <h2>Add Cards</h2>
+      <h2>📥 Import New Deck</h2>
       <button class="close-btn" on:click={() => dispatch('close')}>×</button>
     </div>
 
-    <form on:submit|preventDefault={handleSubmit}>
+    <div class="modal-body">
       <div class="form-group">
-        <label for="card-input">Enter cards (one per line)</label>
+        <label for="deck-title">Deck title</label>
+        <input
+          id="deck-title"
+          type="text"
+          class="text-input"
+          bind:value={title}
+          placeholder="e.g. Simic Landfall"
+          disabled={loading}
+          autofocus
+        />
+        <p class="hint">Used as the deck folder name and display title</p>
+      </div>
+
+      <div class="form-group">
+        <label for="import-input">Deck URL or card list</label>
         <textarea
-          id="card-input"
-          bind:value={cardInput}
-          placeholder="1x Sol Ring&#10;1x Dark Ritual&#10;3x Forest"
-          rows="8"
+          id="import-input"
+          bind:value={input}
+          placeholder="Paste one of:&#10;&#10;• Moxfield URL: https://moxfield.com/decks/abc123&#10;• Archidekt URL: https://archidekt.com/decks/12345&#10;• Card list:&#10;  1x Sol Ring&#10;  1x Dark Ritual&#10;  3x Forest"
+          rows="10"
           disabled={loading}
         ></textarea>
-        <p class="hint">Format: 1x Card Name or 1 Card Name</p>
+        {#if inputHint}
+          <p class="input-hint">{inputHint}</p>
+        {/if}
       </div>
 
       {#if error}
@@ -68,11 +94,11 @@
         <button type="button" class="btn btn-secondary" on:click={() => dispatch('close')} disabled={loading}>
           Cancel
         </button>
-        <button type="submit" class="btn btn-primary" disabled={loading || !cardInput.trim()}>
-          {loading ? 'Adding...' : 'Add Cards'}
+        <button class="btn btn-primary" on:click={handleImport} disabled={loading || !title.trim() || !input.trim()}>
+          {loading ? 'Importing...' : 'Create Deck'}
         </button>
       </div>
-    </form>
+    </div>
   </div>
 </div>
 
@@ -95,7 +121,7 @@
     border: 1px solid var(--border);
     border-radius: var(--radius);
     width: 100%;
-    max-width: 480px;
+    max-width: 560px;
     box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
   }
 
@@ -127,7 +153,7 @@
     color: var(--text-primary);
   }
 
-  form {
+  .modal-body {
     padding: 20px;
   }
 
@@ -143,7 +169,7 @@
     margin-bottom: 8px;
   }
 
-  textarea {
+  .text-input {
     width: 100%;
     background: var(--bg-surface);
     border: 1px solid var(--border);
@@ -151,8 +177,29 @@
     color: var(--text-primary);
     font-family: inherit;
     font-size: 14px;
+    padding: 10px 12px;
+  }
+
+  .text-input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .text-input::placeholder {
+    color: var(--text-muted);
+  }
+
+  textarea {
+    width: 100%;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 13px;
     padding: 12px;
     resize: vertical;
+    line-height: 1.5;
   }
 
   textarea:focus {
@@ -162,11 +209,18 @@
 
   textarea::placeholder {
     color: var(--text-muted);
+    font-family: inherit;
   }
 
   .hint {
     font-size: 12px;
     color: var(--text-muted);
+    margin-top: 6px;
+  }
+
+  .input-hint {
+    font-size: 12px;
+    color: var(--accent);
     margin-top: 6px;
   }
 

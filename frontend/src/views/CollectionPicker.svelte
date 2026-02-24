@@ -1,7 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import type { CollectionInfo } from '../lib/types';
-  import { SelectCollectionFolder, InitializeAndSelectFolder, SwitchCollection, RemoveKnownCollection } from '../../wailsjs/go/main/App';
+  import { SelectCollectionFolder, InitializeAndSelectFolder, SwitchCollection, RemoveKnownCollection } from '../../wailsjs/go/app/App';
 
   export let collections: CollectionInfo[] = [];
   export let invalidPath: string = '';

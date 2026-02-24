@@ -4,7 +4,7 @@
   import DeckView from './views/DeckView.svelte';
   import CollectionPicker from './views/CollectionPicker.svelte';
   import CollectionSwitcher from './components/CollectionSwitcher.svelte';
-  import { GetAppState } from '../../wailsjs/go/main/App';
+  import { GetAppState } from '../../wailsjs/go/app/App';
   import type { AppState, CollectionInfo } from './lib/types';
 
   let appState: AppState | null = null;

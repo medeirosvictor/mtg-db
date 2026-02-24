@@ -1,10 +1,12 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import type { Deck, Card } from '../lib/types';
-  import { GetDeck, GetDeckBasic, ToggleCardTag } from '../../wailsjs/go/main/App';
+  import { GetDeck, GetDeckBasic, ToggleCardTag, UpdateCardText } from '../../wailsjs/go/app/App';
   import ColorPips from '../components/ColorPips.svelte';
   import StatusBadge from '../components/StatusBadge.svelte';
   import ContextMenu from '../components/ContextMenu.svelte';
+  import ImportDeckModal from '../components/ImportDeckModal.svelte';
+  import ExportDeckModal from '../components/ExportDeckModal.svelte';
   import { createEventDispatcher } from 'svelte';
 
   export let slug: string;
@@ -17,12 +19,62 @@
   let error = '';
   let viewMode: 'list' | 'grid' = 'list';
 
+  // Not-found cards from Scryfall sync
+  let notFoundCards: Set<string> = new Set();
+
+  // Inline editing state
+  let editingCard: string | null = null;
+  let editValue = '';
+  let editError = '';
+
+  // DFC flip state: tracks which cards are showing back face
+  // Using an object (record) instead of Set for Svelte reactivity
+  let flippedCards: Record<string, boolean> = {};
+
+  function toggleFlip(cardName: string) {
+    if (flippedCards[cardName]) {
+      delete flippedCards[cardName];
+    } else {
+      flippedCards[cardName] = true;
+    }
+    flippedCards = flippedCards; // trigger reactivity
+  }
+
+  function isFlipped(cardName: string): boolean {
+    return !!flippedCards[cardName];
+  }
+
+  // Search state
+  let searchQuery = '';
+  let searchInput: HTMLInputElement;
+
+  // Modal state
+  let showImportModal = false;
+  let showExportModal = false;
+
   // Context menu state
   let menuVisible = false;
   let menuX = 0;
   let menuY = 0;
   let menuItems: any[] = [];
-  let menuContext: 'deck' | 'wishlist' = 'deck';
+
+  function handleGlobalKeydown(e: KeyboardEvent) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+      e.preventDefault();
+      searchInput?.focus();
+      searchInput?.select();
+    }
+    if (e.key === 'Escape' && searchQuery) {
+      searchQuery = '';
+      searchInput?.blur();
+    }
+  }
+
+  function fuzzyMatch(text: string, query: string): boolean {
+    const lower = text.toLowerCase();
+    const words = query.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+    return words.every(word => lower.includes(word));
+  }
 
   onMount(async () => {
     await loadDeck();
@@ -32,7 +84,6 @@
     try {
       loading = true;
       error = '';
-      // Use GetDeckBasic first for fast load, then can sync with button
       const result = await GetDeckBasic(slug);
       deck = result;
       if (!deck) {
@@ -50,9 +101,16 @@
     try {
       scryfallLoading = true;
       error = '';
+      notFoundCards = new Set();
       console.log('Syncing with Scryfall...');
       const result = await GetDeck(slug);
-      deck = result;
+      if (result) {
+        deck = result.deck;
+        if (result.notFound && result.notFound.length > 0) {
+          notFoundCards = new Set(result.notFound.map(n => n.toLowerCase()));
+          console.log('Cards not found on Scryfall:', result.notFound);
+        }
+      }
       console.log('Scryfall sync complete');
     } catch (e) {
       console.error('Failed to sync Scryfall:', e);
@@ -62,18 +120,86 @@
     }
   }
 
+  function isNotFound(name: string): boolean {
+    return notFoundCards.has(name.toLowerCase());
+  }
+
   function isBasicLand(name: string): boolean {
     const basics = ['plains', 'island', 'swamp', 'mountain', 'forest'];
     return basics.includes(name.toLowerCase());
   }
 
-  $: sortedCards = deck?.cards
+  // Format a card back to its text line representation
+  function cardToText(card: Card): string {
+    let line = `${card.quantity}x ${card.name}`;
+    if (card.setCode) {
+      line += ` (${card.setCode})`;
+      if (card.collectorNumber) {
+        line += ` ${card.collectorNumber}`;
+      }
+    }
+    if (card.foil) {
+      line += ' *F*';
+    }
+    if (card.tags && card.tags.length > 0) {
+      for (const tag of card.tags) {
+        line += ` #${tag}`;
+      }
+    }
+    return line;
+  }
+
+  function startEditing(card: Card) {
+    editingCard = card.name;
+    editValue = cardToText(card);
+    editError = '';
+  }
+
+  function cancelEditing() {
+    editingCard = null;
+    editValue = '';
+    editError = '';
+  }
+
+  async function saveEditing(oldName: string) {
+    if (!editValue.trim()) {
+      editError = 'Card line cannot be empty';
+      return;
+    }
+
+    try {
+      const result = await UpdateCardText(slug, oldName, editValue);
+      if (result === '') {
+        editingCard = null;
+        editValue = '';
+        editError = '';
+        // Reload deck to get updated data
+        const reloaded = await GetDeckBasic(slug);
+        if (reloaded) {
+          deck = reloaded;
+        }
+      } else {
+        editError = result;
+      }
+    } catch (e) {
+      editError = `Error: ${e}`;
+    }
+  }
+
+  function handleEditKeydown(e: KeyboardEvent, oldName: string) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveEditing(oldName);
+    } else if (e.key === 'Escape') {
+      cancelEditing();
+    }
+  }
+
+  $: allSortedCards = deck?.cards
     ? [...deck.cards].sort((a, b) => {
-        // Commanders first
         const aCmd = (a.tags || []).includes('commander');
         const bCmd = (b.tags || []).includes('commander');
         if (aCmd !== bCmd) return aCmd ? -1 : 1;
-        // Then non-basics, then basics
         const aBasic = isBasicLand(a.name);
         const bBasic = isBasicLand(b.name);
         if (aBasic !== bBasic) return aBasic ? 1 : -1;
@@ -81,12 +207,30 @@
       })
     : [];
 
-  $: wishlistCards = deck?.wishlist || [];
+  $: sortedCards = searchQuery.trim()
+    ? allSortedCards.filter(c => {
+        const haystack = [
+          c.name,
+          c.setCode || '',
+          c.scryFall?.typeLine || '',
+          c.scryFall?.oracleText || '',
+          ...(c.tags || []),
+        ].join(' ');
+        return fuzzyMatch(haystack, searchQuery);
+      })
+    : allSortedCards;
+
+  $: allWishlistCards = deck?.wishlist || [];
+  $: wishlistCards = searchQuery.trim()
+    ? allWishlistCards.filter(c => fuzzyMatch(c.name, searchQuery))
+    : allWishlistCards;
   $: commanders = deck?.cards?.filter(c => (c.tags || []).includes('commander')) || [];
   $: commanderNames = commanders.map(c => c.name).join(' / ');
   $: displayCommander = commanderNames || deck?.info?.commander || 'None set';
 
   $: totalPrice = deck?.cards?.reduce((sum, card) => {
+    const isProxy = (card.tags || []).includes('proxy');
+    if (isProxy) return sum;
     const price = card.scryFall?.priceUsd ? parseFloat(card.scryFall.priceUsd) : 0;
     return sum + (price * card.quantity);
   }, 0) || 0;
@@ -99,11 +243,10 @@
     }
   }
 
-  function showCardContextMenu(e: MouseEvent, card: Card, context: 'deck' | 'wishlist') {
+  function showCardContextMenu(e: MouseEvent, card: Card, _context: 'deck' | 'wishlist') {
     e.preventDefault();
     menuX = e.clientX;
     menuY = e.clientY;
-    menuContext = context;
 
     const tags = card.tags || [];
     const isCommander = tags.includes('commander');
@@ -132,6 +275,12 @@
         checked: isWishlisted,
         action: () => toggleTag(card.name, 'wishlist'),
       },
+      { separator: true },
+      {
+        label: 'Edit card text',
+        icon: '✏️',
+        action: () => startEditing(card),
+      },
     ];
 
     menuVisible = true;
@@ -146,6 +295,8 @@
     return badges;
   }
 </script>
+
+<svelte:window on:keydown={handleGlobalKeydown} />
 
 <div class="deck-view">
   {#if loading}
@@ -184,8 +335,22 @@
         {/if}
       </div>
       <div class="header-toolbar">
+        <button
+          class="toolbar-btn"
+          on:click={() => showImportModal = true}
+          title="Import cards from URL or text"
+        >
+          📥 Import
+        </button>
+        <button
+          class="toolbar-btn"
+          on:click={() => showExportModal = true}
+          title="Export deck as text"
+        >
+          📤 Export
+        </button>
         <button 
-          class="sync-btn" 
+          class="toolbar-btn sync-btn" 
           on:click={syncScryfall}
           disabled={loading || scryfallLoading}
           title="Fetch card data from Scryfall"
@@ -209,6 +374,27 @@
       </div>
     </header>
 
+    <div class="search-bar">
+      <span class="search-icon">🔍</span>
+      <input
+        type="text"
+        class="search-input"
+        bind:this={searchInput}
+        bind:value={searchQuery}
+        placeholder="Filter cards by name, type, text, tags...  (Ctrl+F)"
+      />
+      {#if searchQuery}
+        <button class="search-clear" on:click={() => { searchQuery = ''; searchInput?.focus(); }} title="Clear search">✕</button>
+        <span class="search-count">{sortedCards.length} / {allSortedCards.length}</span>
+      {/if}
+    </div>
+
+    {#if notFoundCards.size > 0}
+      <div class="not-found-banner">
+        ⚠️ {notFoundCards.size} card{notFoundCards.size > 1 ? 's' : ''} not found on Scryfall. Check card names highlighted in red below.
+      </div>
+    {/if}
+
     <div class="content">
       {#if viewMode === 'list'}
         <section class="card-list">
@@ -222,36 +408,75 @@
               <span class="col-set">Set</span>
             </div>
             {#each sortedCards as card (card.name)}
-              <div
-                class="card-row"
-                class:basic-land={isBasicLand(card.name)}
-                class:is-commander={(card.tags || []).includes('commander')}
-                on:contextmenu={(e) => showCardContextMenu(e, card, 'deck')}
-              >
-                <span class="col-qty">{card.quantity}×</span>
-                <span class="col-name">
-                  {card.name}
-                  {#if card.foil}
-                    <span class="foil-tag">✨</span>
-                  {/if}
-                </span>
-                <span class="col-tags">
-                  {#each getCardBadges(card) as badge}
-                    <span class="card-badge card-badge-{badge}">
-                      {#if badge === 'commander'}👑{/if}
-                      {#if badge === 'proxy'}🖨️{/if}
-                      {#if badge === 'wishlist'}🛒{/if}
-                      {badge}
-                    </span>
-                  {/each}
-                </span>
-                <span class="col-price">
-                  {card.scryFall?.priceUsd ? '$' + card.scryFall.priceUsd : '-'}
-                </span>
-                <span class="col-set">
-                  {card.setCode || ''}
-                </span>
-              </div>
+              {#if editingCard === card.name}
+                <div class="card-row editing-row">
+                  <div class="edit-container">
+                    <div class="edit-row">
+                      <input
+                        type="text"
+                        class="edit-input"
+                        bind:value={editValue}
+                        on:keydown={(e) => handleEditKeydown(e, card.name)}
+                        autofocus
+                      />
+                      <div class="edit-actions">
+                        <button class="edit-btn save" on:click={() => saveEditing(card.name)} title="Save (Enter)">✓</button>
+                        <button class="edit-btn cancel" on:click={cancelEditing} title="Cancel (Esc)">✕</button>
+                      </div>
+                    </div>
+                    {#if editError}
+                      <div class="edit-error">{editError}</div>
+                    {/if}
+                  </div>
+                </div>
+              {:else}
+                <div
+                  class="card-row"
+                  class:basic-land={isBasicLand(card.name)}
+                  class:is-commander={(card.tags || []).includes('commander')}
+                  class:is-not-found={isNotFound(card.name)}
+                  on:contextmenu={(e) => showCardContextMenu(e, card, 'deck')}
+                  on:dblclick={() => startEditing(card)}
+                >
+                  <span class="col-qty">{card.quantity}×</span>
+                  <span class="col-name">
+                    {#if isNotFound(card.name)}
+                      <span class="not-found-icon" title="Card not found on Scryfall">⚠️</span>
+                    {/if}
+                    {card.name}
+                    {#if card.foil}
+                      <span class="foil-tag">✨</span>
+                    {/if}
+                    {#if card.scryFall?.isDoubleFaced}
+                      <button
+                        class="flip-btn"
+                        on:click|stopPropagation={() => toggleFlip(card.name)}
+                        title={isFlipped(card.name) ? 'Show front face' : 'Show back face'}
+                      >🔄</button>
+                    {/if}
+                  </span>
+                  <span class="col-tags">
+                    {#each getCardBadges(card) as badge}
+                      <span class="card-badge card-badge-{badge}">
+                        {#if badge === 'commander'}👑{/if}
+                        {#if badge === 'proxy'}🖨️{/if}
+                        {#if badge === 'wishlist'}🛒{/if}
+                        {badge}
+                      </span>
+                    {/each}
+                  </span>
+                  <span class="col-price">
+                    {#if (card.tags || []).includes('proxy')}
+                      <span class="proxy-price" title="Proxy — price not tracked">—</span>
+                    {:else}
+                      {card.scryFall?.priceUsd ? '$' + card.scryFall.priceUsd : '-'}
+                    {/if}
+                  </span>
+                  <span class="col-set">
+                    {card.setCode || ''}
+                  </span>
+                </div>
+              {/if}
             {/each}
           </div>
         </section>
@@ -264,18 +489,43 @@
                 class="grid-card"
                 class:basic-land={isBasicLand(card.name)}
                 class:is-commander={(card.tags || []).includes('commander')}
+                class:is-not-found={isNotFound(card.name)}
                 on:contextmenu={(e) => showCardContextMenu(e, card, 'deck')}
               >
                 <div class="card-image">
-                  {#if card.scryFall?.imageUri}
-                    <img src={card.scryFall.imageUri} alt={card.name} loading="lazy" />
+                  {console.log(card)}
+                  {#if (isFlipped(card.name) && card.scryFall?.backImageUri) || card.scryFall?.imageUri}
+                    <img src={isFlipped(card.name) && card.scryFall?.backImageUri ? card.scryFall.backImageUri : card.scryFall?.imageUri} alt={card.name} loading="lazy" />
                   {:else}
-                    <div class="card-placeholder">{card.name.substring(0, 2).toUpperCase()}</div>
+                    <div class="card-placeholder" class:placeholder-not-found={isNotFound(card.name)}>
+                      {#if isNotFound(card.name)}
+                        <span class="not-found-icon-large">⚠️</span>
+                      {:else}
+                        {card.name.substring(0, 2).toUpperCase()}
+                      {/if}
+                    </div>
+                  {/if}
+                  {#if card.scryFall?.isDoubleFaced}
+                    <button
+                      class="flip-btn-grid"
+                      on:click|stopPropagation={() => toggleFlip(card.name)}
+                      title={isFlipped(card.name) ? 'Show front face' : 'Show back face'}
+                    >🔄</button>
                   {/if}
                 </div>
                 <div class="card-details">
-                  <span class="card-name" title={card.name}>{card.name}</span>
-                  <span class="card-qty">{card.quantity}× {#if card.scryFall?.priceUsd}${card.scryFall.priceUsd}{/if}</span>
+                  <span class="card-name" class:card-name-not-found={isNotFound(card.name)} title={card.name}>
+                    {#if isNotFound(card.name)}<span class="not-found-icon-sm">⚠️</span>{/if}
+                    {card.name}
+                  </span>
+                  <span class="card-qty">
+                    {card.quantity}×
+                    {#if (card.tags || []).includes('proxy')}
+                      <span class="proxy-price">proxy</span>
+                    {:else if card.scryFall?.priceUsd}
+                      ${card.scryFall.priceUsd}
+                    {/if}
+                  </span>
                 </div>
               </div>
             {/each}
@@ -321,6 +571,26 @@
   {/if}
 </div>
 
+{#if showImportModal}
+  <ImportDeckModal
+    {slug}
+    on:close={() => showImportModal = false}
+    on:imported={async () => {
+      showImportModal = false;
+      const reloaded = await GetDeckBasic(slug);
+      if (reloaded) deck = reloaded;
+    }}
+  />
+{/if}
+
+{#if showExportModal}
+  <ExportDeckModal
+    {slug}
+    deckTitle={deck?.info?.title || slug}
+    on:close={() => showExportModal = false}
+  />
+{/if}
+
 <ContextMenu
   bind:visible={menuVisible}
   x={menuX}
@@ -348,7 +618,7 @@
     margin-top: 12px;
   }
 
-  .sync-btn {
+  .toolbar-btn {
     background: var(--bg-surface);
     border: 1px solid var(--border);
     color: var(--text-secondary);
@@ -360,13 +630,13 @@
     transition: all 0.15s ease;
   }
 
-  .sync-btn:hover:not(:disabled) {
+  .toolbar-btn:hover:not(:disabled) {
     background: var(--bg-hover);
     border-color: var(--accent);
     color: var(--accent);
   }
 
-  .sync-btn:disabled {
+  .toolbar-btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
   }
@@ -486,6 +756,77 @@
     gap: 32px;
   }
 
+  /* Search bar */
+  .search-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 14px;
+    margin-bottom: 16px;
+    transition: border-color 0.15s ease;
+  }
+
+  .search-bar:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(137, 180, 250, 0.15);
+  }
+
+  .search-icon {
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .search-input {
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 14px;
+    outline: none;
+  }
+
+  .search-input::placeholder {
+    color: var(--text-muted);
+  }
+
+  .search-clear {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+
+  .search-clear:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+  }
+
+  .search-count {
+    font-size: 12px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  /* Not-found banner */
+  .not-found-banner {
+    background: rgba(243, 139, 168, 0.1);
+    border: 1px solid rgba(243, 139, 168, 0.3);
+    color: var(--red);
+    padding: 10px 16px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+
   .cards-table {
     background: var(--bg-secondary);
     border: 1px solid var(--border);
@@ -533,8 +874,26 @@
     background: rgba(203, 166, 247, 0.12);
   }
 
+  .card-row.is-not-found {
+    background: rgba(243, 139, 168, 0.06);
+  }
+
+  .card-row.is-not-found:hover {
+    background: rgba(243, 139, 168, 0.12);
+  }
+
+  .card-row.is-not-found .col-name {
+    color: var(--red);
+    font-weight: 600;
+  }
+
   .card-row.wishlist-row {
     color: var(--text-secondary);
+  }
+
+  .not-found-icon {
+    font-size: 12px;
+    margin-right: 4px;
   }
 
   .col-qty {
@@ -593,6 +952,123 @@
 
   .foil-tag {
     font-size: 11px;
+  }
+
+  /* DFC flip button — inline in list view */
+  .flip-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 0 2px;
+    opacity: 0.5;
+    transition: opacity 0.15s ease;
+    vertical-align: middle;
+  }
+
+  .flip-btn:hover {
+    opacity: 1;
+  }
+
+  /* DFC flip button — overlay in grid view */
+  .flip-btn-grid {
+    position: absolute;
+    bottom: 6px;
+    right: 6px;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+
+  .flip-btn-grid:hover {
+    background: rgba(0, 0, 0, 0.8);
+    border-color: var(--accent);
+  }
+
+  .proxy-price {
+    color: var(--text-muted);
+    font-style: italic;
+    font-weight: 400;
+  }
+
+  /* Inline editing */
+  .editing-row {
+    padding: 4px 16px;
+  }
+
+  .edit-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .edit-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .edit-input {
+    flex: 1;
+    background: var(--bg-surface);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius);
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    padding: 6px 10px;
+    outline: none;
+  }
+
+  .edit-input:focus {
+    box-shadow: 0 0 0 2px rgba(137, 180, 250, 0.25);
+  }
+
+  .edit-actions {
+    display: flex;
+    gap: 4px;
+  }
+
+  .edit-btn {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .edit-btn.save:hover {
+    background: rgba(166, 227, 161, 0.15);
+    border-color: var(--green);
+    color: var(--green);
+  }
+
+  .edit-btn.cancel:hover {
+    background: rgba(243, 139, 168, 0.15);
+    border-color: var(--red);
+    color: var(--red);
+  }
+
+  .edit-error {
+    font-size: 11px;
+    color: var(--red);
+    padding: 2px 0;
   }
 
   .loading, .error {
@@ -700,10 +1176,19 @@
     border-color: var(--mauve);
   }
 
+  .grid-card.is-not-found {
+    border-color: var(--red);
+  }
+
   .card-image {
     aspect-ratio: 488 / 680;
     background: var(--bg-surface);
     overflow: hidden;
+    position: relative;
+  }
+
+  .grid-card:hover .flip-btn-grid {
+    opacity: 1;
   }
 
   .card-image img {
@@ -724,6 +1209,14 @@
     background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-secondary) 100%);
   }
 
+  .card-placeholder.placeholder-not-found {
+    background: linear-gradient(135deg, rgba(243, 139, 168, 0.1) 0%, rgba(243, 139, 168, 0.05) 100%);
+  }
+
+  .not-found-icon-large {
+    font-size: 36px;
+  }
+
   .card-details {
     padding: 8px;
     display: flex;
@@ -738,6 +1231,15 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .card-name-not-found {
+    color: var(--red);
+  }
+
+  .not-found-icon-sm {
+    font-size: 10px;
+    margin-right: 2px;
   }
 
   .card-qty {
