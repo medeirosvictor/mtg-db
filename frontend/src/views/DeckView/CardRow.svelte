@@ -33,66 +33,80 @@
 </script>
 
 {#if isEditing}
-  <div class="card-row editing-row">
-    <div class="edit-container">
-      <div class="edit-row">
+  <div class="py-1 px-4">
+    <div class="flex flex-col gap-1">
+      <div class="flex gap-1.5 items-center">
         <input
           type="text"
-          class="edit-input"
+          class="flex-1 bg-bg-surface border border-accent rounded-lg text-text-primary font-mono text-sm px-2.5 py-1.5 outline-none focus:ring-2 focus:ring-accent/25"
           bind:value={editValue}
           on:keydown={(e) => dispatch('editKeydown', e)}
           autofocus
         />
-        <div class="edit-actions">
-          <button class="edit-btn save" on:click={() => dispatch('editSave')} title="Save (Enter)">✓</button>
-          <button class="edit-btn cancel" on:click={() => dispatch('editCancel')} title="Cancel (Esc)">✕</button>
+        <div class="flex gap-1">
+          <button 
+            class="w-7 h-7 bg-bg-surface border border-border text-text-secondary rounded-lg cursor-pointer text-sm flex items-center justify-center hover:bg-green/15 hover:border-green hover:text-green"
+            on:click={() => dispatch('editSave')} 
+            title="Save (Enter)"
+          >✓</button>
+          <button 
+            class="w-7 h-7 bg-bg-surface border border-border text-text-secondary rounded-lg cursor-pointer text-sm flex items-center justify-center hover:bg-red/15 hover:border-red hover:text-red"
+            on:click={() => dispatch('editCancel')} 
+            title="Cancel (Esc)"
+          >✕</button>
         </div>
       </div>
       {#if editError}
-        <div class="edit-error">{editError}</div>
+        <div class="text-xs text-red">{editError}</div>
       {/if}
     </div>
   </div>
 {:else}
   <div
-    class="card-row"
-    class:basic-land={isBasicLand}
-    class:is-commander={isCommander}
-    class:is-not-found={isNotFound}
-    class:is-selected={isSelected}
+    class="flex items-center px-4 py-1.5 border-b border-border last:border-b-0 transition-colors duration-100
+      {isBasicLand ? 'text-text-muted' : ''}
+      {isCommander ? 'bg-mauve/5 hover:bg-mauve/10' : ''}
+      {isNotFound ? 'bg-red/5 hover:bg-red/10' : ''}
+      {isSelected ? 'bg-accent/10 hover:bg-accent/15' : ''}
+      {!isCommander && !isNotFound && !isSelected ? 'hover:bg-bg-hover' : ''}"
     on:contextmenu={(e) => dispatch('contextmenu', e)}
     on:dblclick={() => dispatch('dblclick')}
     role="button"
     tabindex="0"
   >
-    <span class="col-select">
+    <span class="w-8 flex-shrink-0 flex justify-center">
       <input 
         type="checkbox" 
         checked={isSelected} 
         on:change={() => dispatch('select')}
         on:click|stopPropagation
+        class="w-4 h-4 accent-accent cursor-pointer"
       />
     </span>
-    <span class="col-qty">{card.quantity}×</span>
-    <span class="col-name">
+    <span class="w-10 flex-shrink-0 text-text-muted">{card.quantity}×</span>
+    <span class="flex-1 min-w-0 {isNotFound ? 'text-red font-semibold' : ''}">
       {#if isNotFound}
-        <span class="not-found-icon" title="Card not found on Scryfall">⚠️</span>
+        <span class="text-xs mr-1" title="Card not found on Scryfall">⚠️</span>
       {/if}
       {card.name}
       {#if card.foil}
-        <span class="foil-tag">✨</span>
+        <span class="text-xs ml-1">✨</span>
       {/if}
       {#if card.scryFall?.isDoubleFaced}
         <button
-          class="flip-btn"
+          class="ml-1 bg-transparent border-none cursor-pointer text-xs p-0.5 opacity-50 hover:opacity-100 transition-opacity"
           on:click|stopPropagation={() => dispatch('flip')}
           title={isFlipped ? 'Show front face' : 'Show back face'}
         >🔄</button>
       {/if}
     </span>
-    <span class="col-tags">
+    <span class="w-48 flex-shrink-0 flex gap-1 flex-wrap">
       {#each getBadges(card) as badge}
-        <span class="card-badge card-badge-{badge}">
+        <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide
+          {badge === 'commander' ? 'bg-mauve/15 text-mauve' : ''}
+          {badge === 'proxy' ? 'bg-yellow/15 text-yellow' : ''}
+          {badge === 'wishlist' ? 'bg-accent/15 text-accent' : ''}
+        ">
           {#if badge === 'commander'}👑{/if}
           {#if badge === 'proxy'}🖨️{/if}
           {#if badge === 'wishlist'}🛒{/if}
@@ -100,246 +114,15 @@
         </span>
       {/each}
     </span>
-    <span class="col-price">
+    <span class="w-16 flex-shrink-0 text-right text-green text-xs font-semibold">
       {#if (card.tags || []).includes('proxy')}
-        <span class="proxy-price" title="Proxy — price not tracked">—</span>
+        <span class="text-text-muted italic font-normal" title="Proxy — price not tracked">—</span>
       {:else}
         {card.scryFall?.priceUsd ? '$' + card.scryFall.priceUsd : '-'}
       {/if}
     </span>
-    <span class="col-set">
+    <span class="w-24 flex-shrink-0 text-right text-text-muted text-xs">
       {card.setCode || ''}
     </span>
   </div>
 {/if}
-
-<style>
-  .card-row {
-    display: flex;
-    padding: 6px 16px;
-    border-bottom: 1px solid var(--border);
-    font-size: 13px;
-    transition: background 0.1s;
-    align-items: center;
-  }
-
-  .card-row:last-child {
-    border-bottom: none;
-  }
-
-  .card-row:hover {
-    background: var(--bg-hover);
-  }
-
-  .card-row.is-selected {
-    background: rgba(137, 180, 250, 0.1);
-  }
-
-  .card-row.is-selected:hover {
-    background: rgba(137, 180, 250, 0.15);
-  }
-
-  .card-row.basic-land {
-    color: var(--text-muted);
-  }
-
-  .card-row.is-commander {
-    background: rgba(203, 166, 247, 0.06);
-  }
-
-  .card-row.is-commander:hover {
-    background: rgba(203, 166, 247, 0.12);
-  }
-
-  .card-row.is-not-found {
-    background: rgba(243, 139, 168, 0.06);
-  }
-
-  .card-row.is-not-found:hover {
-    background: rgba(243, 139, 168, 0.12);
-  }
-
-  .card-row.is-not-found .col-name {
-    color: var(--red);
-    font-weight: 600;
-  }
-
-  .not-found-icon {
-    font-size: 12px;
-    margin-right: 4px;
-  }
-
-  .col-qty {
-    width: 40px;
-    flex-shrink: 0;
-    color: var(--text-muted);
-  }
-
-  .col-select {
-    width: 32px;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .col-select input[type="checkbox"] {
-    width: 16px;
-    height: 16px;
-    cursor: pointer;
-    accent-color: var(--accent);
-  }
-
-  .col-name {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .col-tags {
-    width: 200px;
-    flex-shrink: 0;
-    display: flex;
-    gap: 4px;
-    flex-wrap: wrap;
-  }
-
-  .col-set {
-    width: 120px;
-    flex-shrink: 0;
-    text-align: right;
-    color: var(--text-muted);
-    font-size: 12px;
-  }
-
-  .card-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    padding: 1px 6px;
-    border-radius: 3px;
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-  }
-
-  .card-badge-commander {
-    background: rgba(203, 166, 247, 0.15);
-    color: var(--mauve);
-  }
-
-  .card-badge-proxy {
-    background: rgba(249, 226, 175, 0.15);
-    color: var(--yellow);
-  }
-
-  .card-badge-wishlist {
-    background: rgba(137, 180, 250, 0.15);
-    color: var(--accent);
-  }
-
-  .foil-tag {
-    font-size: 11px;
-  }
-
-  .flip-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 12px;
-    padding: 0 2px;
-    opacity: 0.5;
-    transition: opacity 0.15s ease;
-    vertical-align: middle;
-  }
-
-  .flip-btn:hover {
-    opacity: 1;
-  }
-
-  .col-price {
-    width: 70px;
-    flex-shrink: 0;
-    text-align: right;
-    color: var(--green);
-    font-size: 12px;
-    font-weight: 600;
-  }
-
-  .proxy-price {
-    color: var(--text-muted);
-    font-style: italic;
-    font-weight: 400;
-  }
-
-  /* Inline editing */
-  .editing-row {
-    padding: 4px 16px;
-  }
-
-  .edit-container {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .edit-row {
-    display: flex;
-    gap: 6px;
-    align-items: center;
-  }
-
-  .edit-input {
-    flex: 1;
-    background: var(--bg-surface);
-    border: 1px solid var(--accent);
-    border-radius: var(--radius);
-    color: var(--text-primary);
-    font-family: 'JetBrains Mono', 'Fira Code', monospace;
-    font-size: 13px;
-    padding: 6px 10px;
-    outline: none;
-  }
-
-  .edit-input:focus {
-    box-shadow: 0 0 0 2px rgba(137, 180, 250, 0.25);
-  }
-
-  .edit-actions {
-    display: flex;
-    gap: 4px;
-  }
-
-  .edit-btn {
-    background: var(--bg-surface);
-    border: 1px solid var(--border);
-    color: var(--text-secondary);
-    width: 28px;
-    height: 28px;
-    border-radius: var(--radius);
-    cursor: pointer;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .edit-btn.save:hover {
-    background: rgba(166, 227, 161, 0.15);
-    border-color: var(--green);
-    color: var(--green);
-  }
-
-  .edit-btn.cancel:hover {
-    background: rgba(243, 139, 168, 0.15);
-    border-color: var(--red);
-    color: var(--red);
-  }
-
-  .edit-error {
-    font-size: 11px;
-    color: var(--red);
-    padding: 2px 0;
-  }
-</style>

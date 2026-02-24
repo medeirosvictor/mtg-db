@@ -16,6 +16,8 @@ export interface ScryFallData {
   manaCost?: string;
   cmc?: number;
   imageUri?: string;
+  backImageUri?: string;
+  isDoubleFaced?: boolean;
   priceUsd?: string;
   priceUsdFoil?: string;
   colorIdentity?: string;
@@ -46,6 +48,23 @@ export interface Deck {
   cards: Card[];
   wishlist: Card[];
   cardCount: number;
+}
+
+export interface SyncResult {
+  deck: Deck;
+  notFound: string[] | null;
+}
+
+export interface ImportedCard {
+  quantity: number;
+  name: string;
+}
+
+export interface ImportResult {
+  cards: ImportedCard[];
+  deckName: string;
+  source: string;
+  error?: string;
 }
 
 export interface CollectionInfo {

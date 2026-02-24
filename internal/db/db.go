@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"app/internal/scryfall"
+
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -27,6 +28,8 @@ type CachedCard struct {
 	SetName         string
 	CollectorNumber string
 	ImageURI        string
+	BackImageURI    string // Back face image for DFCs
+	IsDoubleFaced   bool
 	PriceUSD        sql.NullString
 	PriceUSDFoil    sql.NullString
 	PriceEUR        sql.NullString
@@ -58,6 +61,27 @@ func Init(dataDir string) error {
 		return fmt.Errorf("failed to create tables: %w", err)
 	}
 
+	// Migrate: add DFC columns if missing
+	if err := migrateAddDFCColumns(); err != nil {
+		return fmt.Errorf("failed to migrate DFC columns: %w", err)
+	}
+
+	return nil
+}
+
+// migrateAddDFCColumns adds back_image_uri and is_double_faced columns if they don't exist.
+func migrateAddDFCColumns() error {
+	// Check if column exists by attempting a query
+	_, err := db.Exec("SELECT back_image_uri FROM cards LIMIT 0")
+	if err != nil {
+		// Column doesn't exist, add it
+		if _, err := db.Exec("ALTER TABLE cards ADD COLUMN back_image_uri TEXT DEFAULT ''"); err != nil {
+			return err
+		}
+		if _, err := db.Exec("ALTER TABLE cards ADD COLUMN is_double_faced INTEGER DEFAULT 0"); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -77,6 +101,8 @@ func createTables() error {
 		set_name TEXT,
 		collector_number TEXT,
 		image_uri TEXT,
+		back_image_uri TEXT DEFAULT '',
+		is_double_faced INTEGER DEFAULT 0,
 		price_usd TEXT,
 		price_usd_foil TEXT,
 		price_eur TEXT,
@@ -99,20 +125,39 @@ func createTables() error {
 	return err
 }
 
-// GetCard retrieves a card from the cache by name (case-insensitive)
+// GetCard retrieves a card from the cache by name (case-insensitive).
+// Also tries looking up by the front-face name for DFC cards.
 func GetCard(name string) (*CachedCard, error) {
+	card, err := getCardByName(name)
+	if err != nil {
+		return nil, err
+	}
+	if card != nil {
+		return card, nil
+	}
+	// Try stripping DFC suffix: "Card A // Card B" → "Card A"
+	stripped := scryfall.StripDFCName(name)
+	if stripped != name {
+		return getCardByName(stripped)
+	}
+	return nil, nil
+}
+
+func getCardByName(name string) (*CachedCard, error) {
 	var card CachedCard
 	err := db.QueryRow(`
 		SELECT name, oracle_id, oracle_text, type_line, mana_cost, cmc, 
 		       colors, color_identity, set_code, set_name, collector_number,
-		       image_uri, price_usd, price_usd_foil, price_eur, price_eur_foil,
+		       image_uri, back_image_uri, is_double_faced,
+		       price_usd, price_usd_foil, price_eur, price_eur_foil,
 		       legalities, updated_at
 		FROM cards 
 		WHERE LOWER(name) = LOWER(?)
 	`, name).Scan(
 		&card.Name, &card.OracleID, &card.OracleText, &card.TypeLine, &card.ManaCost, &card.CMC,
 		&card.Colors, &card.ColorIdentity, &card.SetCode, &card.SetName, &card.CollectorNumber,
-		&card.ImageURI, &card.PriceUSD, &card.PriceUSDFoil, &card.PriceEUR, &card.PriceEURFoil,
+		&card.ImageURI, &card.BackImageURI, &card.IsDoubleFaced,
+		&card.PriceUSD, &card.PriceUSDFoil, &card.PriceEUR, &card.PriceEURFoil,
 		&card.Legalities, &card.UpdatedAt,
 	)
 
@@ -130,9 +175,10 @@ func UpsertCard(card *CachedCard) error {
 	_, err := db.Exec(`
 		INSERT INTO cards (name, oracle_id, oracle_text, type_line, mana_cost, cmc, 
 		                  colors, color_identity, set_code, set_name, collector_number,
-		                  image_uri, price_usd, price_usd_foil, price_eur, price_eur_foil,
+		                  image_uri, back_image_uri, is_double_faced,
+		                  price_usd, price_usd_foil, price_eur, price_eur_foil,
 		                  legalities, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(name) DO UPDATE SET
 			oracle_id = excluded.oracle_id,
 			oracle_text = excluded.oracle_text,
@@ -145,6 +191,8 @@ func UpsertCard(card *CachedCard) error {
 			set_name = excluded.set_name,
 			collector_number = excluded.collector_number,
 			image_uri = excluded.image_uri,
+			back_image_uri = excluded.back_image_uri,
+			is_double_faced = excluded.is_double_faced,
 			price_usd = excluded.price_usd,
 			price_usd_foil = excluded.price_usd_foil,
 			price_eur = excluded.price_eur,
@@ -153,7 +201,8 @@ func UpsertCard(card *CachedCard) error {
 			updated_at = excluded.updated_at
 	`, card.Name, card.OracleID, card.OracleText, card.TypeLine, card.ManaCost, card.CMC,
 		card.Colors, card.ColorIdentity, card.SetCode, card.SetName, card.CollectorNumber,
-		card.ImageURI, card.PriceUSD, card.PriceUSDFoil, card.PriceEUR, card.PriceEURFoil,
+		card.ImageURI, card.BackImageURI, card.IsDoubleFaced,
+		card.PriceUSD, card.PriceUSDFoil, card.PriceEUR, card.PriceEURFoil,
 		card.Legalities, card.UpdatedAt)
 	return err
 }
@@ -171,21 +220,24 @@ func IsStale(name string, hours int) (bool, error) {
 	return time.Since(updatedAt) > time.Duration(hours)*time.Hour, nil
 }
 
-// FromScryfallCard converts a Scryfall card to a cached card
+// FromScryfallCard converts a Scryfall card to a cached card.
+// Handles double-faced cards by extracting front face data.
 func FromScryfallCard(sc *scryfall.Card) *CachedCard {
 	return &CachedCard{
 		Name:            sc.Name,
 		OracleID:        sc.OracleID,
-		OracleText:      sc.OracleText,
-		TypeLine:        sc.TypeLine,
-		ManaCost:        sc.ManaCost,
+		OracleText:      sc.FrontOracleText(),
+		TypeLine:        sc.FrontTypeLine(),
+		ManaCost:        sc.FrontManaCost(),
 		CMC:             sc.CMC,
 		Colors:          `"` + joinStrings(sc.Colors) + `"`,
 		ColorIdentity:   `"` + joinStrings(sc.ColorIdentity) + `"`,
 		SetCode:         sc.SetCode,
 		SetName:         sc.SetName,
 		CollectorNumber: sc.CollectorNumber,
-		ImageURI:        sc.ImageURIs.Normal,
+		ImageURI:        sc.FrontFaceImage(),
+		BackImageURI:    sc.BackFaceImage(),
+		IsDoubleFaced:   sc.IsDoubleFaced(),
 		PriceUSD:        nullString(sc.Prices.USD),
 		PriceUSDFoil:    nullString(sc.Prices.USDFoil),
 		PriceEUR:        nullString(sc.Prices.EUR),
@@ -228,6 +280,12 @@ func nullString(s string) sql.NullString {
 		return sql.NullString{Valid: false}
 	}
 	return sql.NullString{String: s, Valid: true}
+}
+
+// ClearUnmatchedCards removes all unmatched card records for a given deck slug.
+func ClearUnmatchedCards(deckSlug string) error {
+	_, err := db.Exec("DELETE FROM unmatched_cards WHERE deck_slug = ?", deckSlug)
+	return err
 }
 
 // AddUnmatchedCard records a card that couldn't be found on Scryfall

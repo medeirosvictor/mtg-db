@@ -72,156 +72,47 @@
 
 <svelte:window on:click={handleClickOutside} on:keydown={handleKeydown} />
 
-<div class="switcher">
-  <button class="switcher-btn" on:click|stopPropagation={toggleDropdown} disabled={loading}>
-    <span class="switcher-icon">📁</span>
-    <span class="switcher-label">{activeLabel || 'Collection'}</span>
-    <span class="switcher-chevron" class:open>▾</span>
+<div class="relative">
+  <button 
+    class="flex items-center gap-2 px-3 py-1.5 bg-bg-surface border border-border rounded-lg text-text-primary font-inherit text-sm hover:bg-bg-hover hover:border-accent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+    on:click|stopPropagation={toggleDropdown} 
+    disabled={loading}
+  >
+    <span class="text-sm">📁</span>
+    <span class="font-semibold max-w-[200px] overflow-hidden text-ellipsis whitespace-nowrap">{activeLabel || 'Collection'}</span>
+    <span class="text-[10px] text-text-muted transition-transform {open ? 'rotate-180' : ''}">▾</span>
   </button>
 
   {#if open}
-    <div class="dropdown" role="menu" tabindex="-1" on:click|stopPropagation on:keydown|stopPropagation>
+    <div 
+      class="absolute top-full left-0 mt-1 min-w-[280px] bg-bg-secondary border border-border rounded-lg shadow-lg z-10 p-1" 
+      role="menu" 
+      tabindex="-1" 
+      on:click|stopPropagation 
+      on:keydown|stopPropagation
+    >
       {#if otherCollections.length > 0}
-        <div class="dropdown-section">
-          <div class="dropdown-heading">Switch Collection</div>
+        <div class="py-1">
+          <div class="px-3.5 py-1.5 text-[11px] font-semibold text-text-muted uppercase tracking-wide">Switch Collection</div>
           {#each otherCollections as col}
-            <button class="dropdown-item" on:click={() => switchTo(col.path)}>
-              <span class="item-label">{col.label}</span>
-              <span class="item-path">{col.path}</span>
+            <button 
+              class="flex flex-col items-start w-full px-3.5 py-2 border-none bg-transparent text-text-primary font-inherit text-sm cursor-pointer text-left hover:bg-bg-hover"
+              on:click={() => switchTo(col.path)}
+            >
+              <span class="font-medium">{col.label}</span>
+              <span class="text-xs text-text-muted mt-0.5 break-all">{col.path}</span>
             </button>
           {/each}
         </div>
-        <div class="dropdown-divider"></div>
+        <div class="h-px bg-border my-1"></div>
       {/if}
-      <button class="dropdown-item action-item" on:click={openFolder}>
-        <span class="item-icon">📂</span>
-        <span class="item-label">Open another folder…</span>
+      <button 
+        class="flex items-center gap-2 w-full px-3.5 py-2 border-none bg-transparent text-text-primary font-inherit text-sm cursor-pointer text-left hover:bg-bg-hover"
+        on:click={openFolder}
+      >
+        <span class="text-sm">📂</span>
+        <span class="font-medium">Open another folder…</span>
       </button>
     </div>
   {/if}
 </div>
-
-<style>
-  .switcher {
-    position: relative;
-  }
-
-  .switcher-btn {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 12px;
-    background: var(--bg-surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    color: var(--text-primary);
-    cursor: pointer;
-    font-family: inherit;
-    font-size: 13px;
-    transition: all 0.15s ease;
-  }
-
-  .switcher-btn:hover:not(:disabled) {
-    background: var(--bg-hover);
-    border-color: var(--accent);
-  }
-
-  .switcher-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .switcher-icon {
-    font-size: 14px;
-  }
-
-  .switcher-label {
-    font-weight: 600;
-    max-width: 200px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .switcher-chevron {
-    font-size: 10px;
-    color: var(--text-muted);
-    transition: transform 0.15s ease;
-  }
-
-  .switcher-chevron.open {
-    transform: rotate(180deg);
-  }
-
-  .dropdown {
-    position: absolute;
-    top: calc(100% + 4px);
-    left: 0;
-    min-width: 280px;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-    z-index: 100;
-    padding: 4px 0;
-  }
-
-  .dropdown-section {
-    padding: 4px 0;
-  }
-
-  .dropdown-heading {
-    padding: 6px 14px;
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .dropdown-item {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    width: 100%;
-    padding: 8px 14px;
-    border: none;
-    background: none;
-    color: var(--text-primary);
-    font-family: inherit;
-    font-size: 13px;
-    cursor: pointer;
-    text-align: left;
-  }
-
-  .dropdown-item:hover {
-    background: var(--bg-hover);
-  }
-
-  .dropdown-item.action-item {
-    flex-direction: row;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .item-label {
-    font-weight: 500;
-  }
-
-  .item-path {
-    font-size: 11px;
-    color: var(--text-muted);
-    margin-top: 1px;
-    word-break: break-all;
-  }
-
-  .item-icon {
-    font-size: 14px;
-  }
-
-  .dropdown-divider {
-    height: 1px;
-    background: var(--border);
-    margin: 4px 0;
-  }
-</style>

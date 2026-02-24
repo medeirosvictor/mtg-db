@@ -12,25 +12,12 @@
   };
 </script>
 
-<div class="color-pips">
+<div class="flex gap-1 items-center">
   {#each parsed as color}
-    <span class="pip" style={pipStyle(color)} title={color}></span>
+    <span 
+      class="w-4 h-4 rounded-full border flex-shrink-0 inline-block" 
+      style={pipStyle(color)}
+      title={color}
+    ></span>
   {/each}
 </div>
-
-<style>
-  .color-pips {
-    display: flex;
-    gap: 4px;
-    align-items: center;
-  }
-
-  .pip {
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    border: 1.5px solid;
-    display: inline-block;
-    flex-shrink: 0;
-  }
-</style>

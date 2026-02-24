@@ -27,21 +27,21 @@
 </script>
 
 <div
-  class="grid-card"
-  class:basic-land={isBasicLand}
-  class:is-commander={isCommander}
-  class:is-not-found={isNotFound}
+  class="bg-bg-secondary border rounded-lg overflow-hidden cursor-pointer transition-all hover:border-accent hover:-translate-y-0.5
+    {isBasicLand ? 'opacity-70' : ''}
+    {isCommander ? 'border-mauve' : ''}
+    {isNotFound ? 'border-red' : 'border-border'}"
   on:contextmenu={(e) => dispatch('contextmenu', e)}
   role="button"
   tabindex="0"
 >
-  <div class="card-image">
+  <div class="aspect-[488/680] bg-bg-surface overflow-hidden relative">
     {#if imageUri}
-      <img src={imageUri} alt={card.name} loading="lazy" />
+      <img src={imageUri} alt={card.name} loading="lazy" class="w-full h-full object-cover" />
     {:else}
-      <div class="card-placeholder" class:placeholder-not-found={isNotFound}>
+      <div class="w-full h-full flex items-center justify-center text-2xl font-bold text-text-muted {isNotFound ? 'bg-red/10' : 'bg-gradient-to-br from-bg-surface to-bg-secondary'}">
         {#if isNotFound}
-          <span class="not-found-icon-large">⚠️</span>
+          <span class="text-4xl">⚠️</span>
         {:else}
           {card.name.substring(0, 2).toUpperCase()}
         {/if}
@@ -49,147 +49,28 @@
     {/if}
     {#if card.scryFall?.isDoubleFaced}
       <button
-        class="flip-btn-grid"
+        class="absolute bottom-1.5 right-1.5 bg-black/60 border border-white/20 rounded-full w-7 h-7 flex items-center justify-center cursor-pointer text-sm opacity-0 hover:bg-black/80 hover:border-accent transition-all"
+        class:opacity-100={true}
         on:click|stopPropagation={() => dispatch('flip')}
         title={isFlipped ? 'Show front face' : 'Show back face'}
       >🔄</button>
     {/if}
   </div>
-  <div class="card-details">
-    <span class="card-name" class:card-name-not-found={isNotFound} title={card.name}>
-      {#if isNotFound}<span class="not-found-icon-sm">⚠️</span>{/if}
+  <div class="p-2 flex flex-col gap-0.5">
+    <span 
+      class="text-xs font-semibold text-text-primary whitespace-nowrap overflow-hidden text-ellipsis {isNotFound ? 'text-red' : ''}" 
+      title={card.name}
+    >
+      {#if isNotFound}<span class="text-[10px] mr-0.5">⚠️</span>{/if}
       {card.name}
     </span>
-    <span class="card-qty">
+    <span class="text-xs text-text-muted">
       {card.quantity}×
       {#if (card.tags || []).includes('proxy')}
-        <span class="proxy-price">proxy</span>
+        <span class="italic">proxy</span>
       {:else if card.scryFall?.priceUsd}
         ${card.scryFall.priceUsd}
       {/if}
     </span>
   </div>
 </div>
-
-<style>
-  .grid-card {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .grid-card:hover {
-    border-color: var(--accent);
-    transform: translateY(-2px);
-  }
-
-  .grid-card:hover .flip-btn-grid {
-    opacity: 1;
-  }
-
-  .grid-card.basic-land {
-    opacity: 0.7;
-  }
-
-  .grid-card.is-commander {
-    border-color: var(--mauve);
-  }
-
-  .grid-card.is-not-found {
-    border-color: var(--red);
-  }
-
-  .card-image {
-    aspect-ratio: 488 / 680;
-    background: var(--bg-surface);
-    overflow: hidden;
-    position: relative;
-  }
-
-  .card-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .flip-btn-grid {
-    position: absolute;
-    bottom: 6px;
-    right: 6px;
-    background: rgba(0, 0, 0, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 50%;
-    width: 28px;
-    height: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 14px;
-    opacity: 0;
-    transition: opacity 0.15s ease;
-  }
-
-  .flip-btn-grid:hover {
-    background: rgba(0, 0, 0, 0.8);
-    border-color: var(--accent);
-  }
-
-  .card-placeholder {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 28px;
-    font-weight: 700;
-    color: var(--text-muted);
-    background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-secondary) 100%);
-  }
-
-  .card-placeholder.placeholder-not-found {
-    background: linear-gradient(135deg, rgba(243, 139, 168, 0.1) 0%, rgba(243, 139, 168, 0.05) 100%);
-  }
-
-  .not-found-icon-large {
-    font-size: 36px;
-  }
-
-  .card-details {
-    padding: 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .card-name {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .card-name-not-found {
-    color: var(--red);
-  }
-
-  .not-found-icon-sm {
-    font-size: 10px;
-    margin-right: 2px;
-  }
-
-  .card-qty {
-    font-size: 10px;
-    color: var(--text-muted);
-  }
-
-  .proxy-price {
-    color: var(--text-muted);
-    font-style: italic;
-  }
-</style>

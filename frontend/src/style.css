@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
   --bg-primary: #11111b;
   --bg-secondary: #1e1e2e;
@@ -72,3 +76,13 @@ body {
 .badge-owned { background: var(--green); color: #1e1e2e; }
 .badge-planned { background: var(--yellow); color: #1e1e2e; }
 .badge-disassembled { background: var(--text-muted); color: #1e1e2e; }
+
+/* Custom utilities */
+@layer utilities {
+  .radius {
+    border-radius: var(--radius);
+  }
+  .radius-lg {
+    border-radius: var(--radius-lg);
+  }
+}

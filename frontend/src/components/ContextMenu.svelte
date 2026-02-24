@@ -53,100 +53,35 @@
     document.removeEventListener('keydown', handleKeydown);
   });
 
-  // Clamp position so menu doesn't overflow the window
   $: adjustedX = Math.min(x, window.innerWidth - 220);
   $: adjustedY = Math.min(y, window.innerHeight - (items.length * 36 + 16));
 </script>
 
 {#if visible}
   <div
-    class="context-menu"
+    class="fixed z-50 min-w-[200px] bg-bg-secondary border border-border rounded-lg p-1 shadow-lg"
     style="top: {adjustedY}px; left: {adjustedX}px;"
     bind:this={menuEl}
   >
     {#each items as item}
       {#if item.separator}
-        <div class="separator"></div>
+        <div class="h-px bg-border my-1"></div>
       {:else}
         <button
-          class="menu-item"
-          class:disabled={item.disabled}
-          class:checked={item.checked}
+          class="flex items-center w-full px-3.5 py-2 border-none bg-transparent text-text-primary font-inherit text-sm cursor-pointer text-left gap-2 {item.disabled ? 'text-text-muted cursor-not-allowed' : 'hover:bg-bg-hover'} {item.checked ? 'text-accent' : ''}"
+          class:cursor-not-allowed={item.disabled}
+          class:text-text-muted={item.disabled}
           on:click={() => handleItemClick(item)}
         >
           {#if item.icon}
-            <span class="item-icon">{item.icon}</span>
+            <span class="w-[18px] text-center flex-shrink-0 text-sm">{item.icon}</span>
           {/if}
-          <span class="item-label">{item.label}</span>
+          <span class="flex-1">{item.label}</span>
           {#if item.checked}
-            <span class="item-check">✓</span>
+            <span class="text-accent font-bold text-sm">✓</span>
           {/if}
         </button>
       {/if}
     {/each}
   </div>
 {/if}
-
-<style>
-  .context-menu {
-    position: fixed;
-    z-index: 1000;
-    min-width: 200px;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 4px 0;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-  }
-
-  .menu-item {
-    display: flex;
-    align-items: center;
-    width: 100%;
-    padding: 8px 14px;
-    border: none;
-    background: none;
-    color: var(--text-primary);
-    font-family: inherit;
-    font-size: 13px;
-    cursor: pointer;
-    text-align: left;
-    gap: 8px;
-  }
-
-  .menu-item:hover:not(.disabled) {
-    background: var(--bg-hover);
-  }
-
-  .menu-item.disabled {
-    color: var(--text-muted);
-    cursor: not-allowed;
-  }
-
-  .menu-item.checked {
-    color: var(--accent);
-  }
-
-  .item-icon {
-    width: 18px;
-    text-align: center;
-    flex-shrink: 0;
-    font-size: 14px;
-  }
-
-  .item-label {
-    flex: 1;
-  }
-
-  .item-check {
-    color: var(--accent);
-    font-weight: 700;
-    font-size: 14px;
-  }
-
-  .separator {
-    height: 1px;
-    background: var(--border);
-    margin: 4px 0;
-  }
-</style>

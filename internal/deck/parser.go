@@ -29,6 +29,8 @@ type ScryfallData struct {
 	ManaCost      string   `json:"manaCost,omitempty"`
 	CMC           float64  `json:"cmc,omitempty"`
 	ImageURI      string   `json:"imageUri,omitempty"`
+	BackImageURI  string   `json:"backImageUri,omitempty"`
+	IsDoubleFaced bool     `json:"isDoubleFaced,omitempty"`
 	PriceUSD      string   `json:"priceUsd,omitempty"`
 	PriceUSDFoil  string   `json:"priceUsdFoil,omitempty"`
 	ColorIdentity string   `json:"colorIdentity,omitempty"`

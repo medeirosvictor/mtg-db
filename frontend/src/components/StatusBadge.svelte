@@ -2,10 +2,10 @@
   export let status: string;
 
   $: badgeClass = {
-    'Owned': 'badge-owned',
-    'Planned': 'badge-planned',
-    'Disassembled': 'badge-disassembled',
-  }[status] || 'badge-disassembled';
+    'Owned': 'bg-green text-bg-primary',
+    'Planned': 'bg-yellow text-bg-primary',
+    'Disassembled': 'bg-text-muted text-bg-primary',
+  }[status] || 'bg-text-muted text-bg-primary';
 </script>
 
-<span class="badge {badgeClass}">{status}</span>
+<span class="inline-block px-2 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wide {badgeClass}">{status}</span>

@@ -157,7 +157,6 @@
 
   function toggleFlip(cardName: string) {
     if (flippedCards[cardName]) {
-      // Use object spread to create a new object without the key
       const { [cardName]: _, ...rest } = flippedCards;
       flippedCards = rest;
     } else {
@@ -182,7 +181,6 @@
   // Check if any card has cached Scryfall data
   function hasCachedData(cards: Card[]): boolean {
     if (!cards || cards.length === 0) return false;
-    // Check if at least one card has Scryfall data cached
     return cards.some(card => card.scryFall?.imageUri || card.scryFall?.oracleText);
   }
 
@@ -191,8 +189,6 @@
       loading = true;
       error = '';
       
-      // First, try to get the full deck with cached Scryfall data
-      // This will return cached data if available, or fetch fresh if not
       try {
         const result = await GetDeck(slug);
         if (result) {
@@ -200,24 +196,20 @@
           if (result.notFound && result.notFound.length > 0) {
             notFoundCards = new Set(result.notFound.map(n => n.toLowerCase()));
           }
-          // Successfully loaded with Scryfall data
           console.log('Deck loaded with Scryfall data');
           loading = false;
           return;
         }
       } catch (e) {
-        // GetDeck failed, fall back to GetDeckBasic
         console.log('GetDeck failed, falling back to GetDeckBasic:', e);
       }
       
-      // Fallback: Load basic deck without Scryfall data
       const result = await GetDeckBasic(slug);
       deck = result;
       if (!deck) {
         error = `Deck "${slug}" not found`;
       }
       
-      // Check if we have cached data that could be loaded
       if (deck && hasCachedData(deck.cards)) {
         console.log('Cached Scryfall data available - user can click Sync to load');
       }
@@ -311,7 +303,6 @@
 
   $: totalPrice = calculateTotalPrice(deck?.cards || []);
 
-  // Update selectAll when sorted cards change
   $: if (sortedCards) {
     updateSelectAll();
   }
@@ -370,20 +361,26 @@
 
 <svelte:window on:keydown={handleGlobalKeydown} />
 
-<div class="deck-view">
+<div class="flex-1 overflow-y-auto p-6 lg:p-8">
   {#if loading}
-    <div class="loading">
-      <div class="loading-spinner"></div>
+    <div class="text-center py-16 text-text-secondary">
+      <div class="w-10 h-10 border-3 border-border border-t-accent rounded-full animate-spin mx-auto mb-4"></div>
       <p>Loading deck...</p>
-      <p class="loading-hint">Fetching card data from Scryfall</p>
+      <p class="text-xs text-text-muted mt-2">Fetching card data from Scryfall</p>
     </div>
   {:else if error}
-    <div class="error-container">
-      <div class="error">{error}</div>
-      <button class="retry-btn" on:click={loadDeck}>Try Again</button>
+    <div class="text-center py-16">
+      <div class="bg-red/10 border border-red/30 text-red px-4 py-4 rounded-lg mb-4">{error}</div>
+      <button 
+        class="bg-accent text-bg-primary border-none px-5 py-2.5 rounded-lg text-sm font-semibold cursor-pointer hover:bg-accent-hover"
+        on:click={loadDeck}
+      >Try Again</button>
     </div>
   {:else if deck}
-    <button class="back-btn" on:click={() => dispatch('navigate', { view: 'home' })}>
+    <button 
+      class="bg-transparent border border-border text-text-secondary px-3.5 py-1.5 rounded-lg text-sm mb-4 font-inherit cursor-pointer hover:bg-bg-surface hover:text-text-primary"
+      on:click={() => dispatch('navigate', { view: 'home' })}
+    >
       ← Back
     </button>
 
@@ -407,37 +404,38 @@
     />
 
     {#if notFoundCards.size > 0}
-      <div class="not-found-banner">
+      <div class="bg-red/10 border border-red/30 text-red px-4 py-2.5 rounded-lg text-sm mb-4">
         ⚠️ {notFoundCards.size} card{notFoundCards.size > 1 ? 's' : ''} not found on Scryfall. Check card names highlighted in red below.
       </div>
     {/if}
 
-    <div class="content">
+    <div class="flex flex-col gap-8">
       {#if viewMode === 'list'}
-        <section class="card-list">
-          <h2>Cards ({sortedCards.length} unique, {deck.cardCount} total)</h2>
+        <section>
+          <h2 class="text-base font-semibold mb-3 text-text-secondary">Cards ({sortedCards.length} unique, {deck.cardCount} total)</h2>
           <div 
-            class="cards-table"
+            class="bg-bg-secondary border border-border rounded-lg overflow-hidden"
             on:contextmenu={(e) => {
               if (selectedCards.size > 0) {
                 showSelectionContextMenu(e);
               }
             }}
           >
-            <div class="table-header">
-              <span class="col-select">
+            <div class="flex items-center px-4 py-2 bg-bg-surface text-xs font-semibold uppercase tracking-wide text-text-muted">
+              <span class="w-8 flex-shrink-0 flex justify-center">
                 <input 
                   type="checkbox" 
                   checked={selectAll} 
                   on:change={toggleSelectAll}
                   title={selectAll ? 'Deselect all' : 'Select all'}
+                  class="w-4 h-4 accent-accent"
                 />
               </span>
-              <span class="col-qty">#</span>
-              <span class="col-name">Card Name</span>
-              <span class="col-tags">Tags</span>
-              <span class="col-price">Price</span>
-              <span class="col-set">Set</span>
+              <span class="w-10 flex-shrink-0">#</span>
+              <span class="flex-1 min-w-0">Card Name</span>
+              <span class="w-48 flex-shrink-0">Tags</span>
+              <span class="w-16 flex-shrink-0 text-right">Price</span>
+              <span class="w-24 flex-shrink-0 text-right">Set</span>
             </div>
             {#each sortedCards as card (card.name)}
               <CardRow
@@ -462,9 +460,9 @@
           </div>
         </section>
       {:else}
-        <section class="card-grid">
-          <h2>Cards ({sortedCards.length} unique, {deck.cardCount} total)</h2>
-          <div class="cards-grid">
+        <section>
+          <h2 class="text-base font-semibold mb-4 text-text-secondary">Cards ({sortedCards.length} unique, {deck.cardCount} total)</h2>
+          <div class="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-4">
             {#each sortedCards as card (card.name)}
               <CardGridItem
                 {card}
@@ -515,184 +513,3 @@
   y={menuY}
   items={menuItems}
 />
-
-<style>
-  .deck-view {
-    flex: 1;
-    overflow-y: auto;
-    padding: 24px 32px;
-  }
-
-  .back-btn {
-    background: none;
-    border: 1px solid var(--border);
-    color: var(--text-secondary);
-    padding: 6px 14px;
-    border-radius: var(--radius);
-    cursor: pointer;
-    font-size: 13px;
-    margin-bottom: 16px;
-    font-family: inherit;
-  }
-
-  .back-btn:hover {
-    background: var(--bg-surface);
-    color: var(--text-primary);
-  }
-
-  h2 {
-    font-size: 16px;
-    font-weight: 600;
-    margin-bottom: 12px;
-    color: var(--text-secondary);
-  }
-
-  .content {
-    display: flex;
-    flex-direction: column;
-    gap: 32px;
-  }
-
-  /* Table header (used in list view) */
-  .cards-table {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
-  }
-
-  .table-header {
-    display: flex;
-    padding: 8px 16px;
-    background: var(--bg-surface);
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--text-muted);
-  }
-
-  .col-qty {
-    width: 40px;
-    flex-shrink: 0;
-  }
-
-  .col-select {
-    width: 32px;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .col-select input[type="checkbox"] {
-    width: 16px;
-    height: 16px;
-    cursor: pointer;
-    accent-color: var(--accent);
-  }
-
-  .col-name {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .col-tags {
-    width: 200px;
-    flex-shrink: 0;
-  }
-
-  .col-set {
-    width: 120px;
-    flex-shrink: 0;
-    text-align: right;
-  }
-
-  .col-price {
-    width: 70px;
-    flex-shrink: 0;
-    text-align: right;
-  }
-
-  /* Not-found banner */
-  .not-found-banner {
-    background: rgba(243, 139, 168, 0.1);
-    border: 1px solid rgba(243, 139, 168, 0.3);
-    color: var(--red);
-    padding: 10px 16px;
-    border-radius: var(--radius);
-    font-size: 13px;
-    margin-bottom: 16px;
-  }
-
-  /* Grid View */
-  .card-grid h2 {
-    font-size: 16px;
-    font-weight: 600;
-    margin-bottom: 16px;
-    color: var(--text-secondary);
-  }
-
-  .cards-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 16px;
-  }
-
-  /* Loading/Error states */
-  .loading, .error {
-    text-align: center;
-    padding: 60px 20px;
-    color: var(--text-secondary);
-  }
-
-  .loading-spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid var(--border);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin: 0 auto 16px;
-  }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-
-  .loading-hint {
-    font-size: 12px;
-    color: var(--text-muted);
-    margin-top: 8px;
-  }
-
-  .error-container {
-    text-align: center;
-    padding: 60px 20px;
-  }
-
-  .error {
-    color: var(--red);
-    background: rgba(243, 139, 168, 0.1);
-    border: 1px solid rgba(243, 139, 168, 0.3);
-    padding: 16px;
-    border-radius: var(--radius);
-    margin-bottom: 16px;
-  }
-
-  .retry-btn {
-    background: var(--accent);
-    color: #11111b;
-    border: none;
-    padding: 10px 20px;
-    border-radius: var(--radius);
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: inherit;
-  }
-
-  .retry-btn:hover {
-    background: var(--accent-hover);
-  }
-</style>

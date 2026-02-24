@@ -17,131 +17,40 @@
   }
 </script>
 
-<section class="card-list wishlist">
-  <h2>Wishlist ({cards.length})</h2>
-  <div class="cards-table">
-    <div class="table-header">
-      <span class="col-qty">#</span>
-      <span class="col-name">Card Name</span>
-      <span class="col-tags">Tags</span>
-      <span class="col-set">Set</span>
+<section>
+  <h2 class="text-base font-semibold mb-3 text-orange">Wishlist ({cards.length})</h2>
+  <div class="bg-bg-secondary border border-border rounded-lg overflow-hidden">
+    <div class="flex items-center px-4 py-2 bg-bg-surface text-xs font-semibold uppercase tracking-wide text-text-muted">
+      <span class="w-10 flex-shrink-0">#</span>
+      <span class="flex-1 min-w-0">Card Name</span>
+      <span class="w-48 flex-shrink-0">Tags</span>
+      <span class="w-24 flex-shrink-0 text-right">Set</span>
     </div>
     {#each cards as card (card.name)}
       <div
-        class="card-row wishlist-row"
+        class="flex items-center px-4 py-1.5 border-b border-border last:border-b-0 text-sm hover:bg-bg-hover transition-colors text-text-secondary"
         on:contextmenu={(e) => dispatch('contextmenu', e)}
         role="button"
         tabindex="0"
       >
-        <span class="col-qty">{card.quantity}×</span>
-        <span class="col-name">{card.name}</span>
-        <span class="col-tags">
+        <span class="w-10 flex-shrink-0 text-text-muted">{card.quantity}×</span>
+        <span class="flex-1 min-w-0">{card.name}</span>
+        <span class="w-48 flex-shrink-0 flex gap-1 flex-wrap">
           {#each getBadges(card) as badge}
-            <span class="card-badge card-badge-{badge}">
+            <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide
+              {badge === 'proxy' ? 'bg-yellow/15 text-yellow' : ''}
+              {badge === 'wishlist' ? 'bg-accent/15 text-accent' : ''}
+            ">
               {#if badge === 'proxy'}🖨️{/if}
               {#if badge === 'wishlist'}🛒{/if}
               {badge}
             </span>
           {/each}
         </span>
-        <span class="col-set">
+        <span class="w-24 flex-shrink-0 text-right text-text-muted text-xs">
           {card.setCode || ''}
         </span>
       </div>
     {/each}
   </div>
 </section>
-
-<style>
-  .wishlist h2 {
-    color: var(--orange);
-  }
-
-  .cards-table {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
-  }
-
-  .table-header {
-    display: flex;
-    padding: 8px 16px;
-    background: var(--bg-surface);
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--text-muted);
-  }
-
-  .card-row {
-    display: flex;
-    padding: 6px 16px;
-    border-bottom: 1px solid var(--border);
-    font-size: 13px;
-    transition: background 0.1s;
-    align-items: center;
-  }
-
-  .card-row:last-child {
-    border-bottom: none;
-  }
-
-  .card-row:hover {
-    background: var(--bg-hover);
-  }
-
-  .card-row.wishlist-row {
-    color: var(--text-secondary);
-  }
-
-  .col-qty {
-    width: 40px;
-    flex-shrink: 0;
-    color: var(--text-muted);
-  }
-
-  .col-name {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .col-tags {
-    width: 200px;
-    flex-shrink: 0;
-    display: flex;
-    gap: 4px;
-    flex-wrap: wrap;
-  }
-
-  .col-set {
-    width: 120px;
-    flex-shrink: 0;
-    text-align: right;
-    color: var(--text-muted);
-    font-size: 12px;
-  }
-
-  .card-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    padding: 1px 6px;
-    border-radius: 3px;
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-  }
-
-  .card-badge-proxy {
-    background: rgba(249, 226, 175, 0.15);
-    color: var(--yellow);
-  }
-
-  .card-badge-wishlist {
-    background: rgba(137, 180, 250, 0.15);
-    color: var(--accent);
-  }
-</style>

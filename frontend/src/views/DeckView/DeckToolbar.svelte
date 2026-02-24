@@ -13,102 +13,39 @@
   }>();
 </script>
 
-<div class="header-toolbar">
+<div class="flex justify-end gap-3 mt-3">
   <button
-    class="toolbar-btn"
+    class="bg-bg-surface border border-border text-text-secondary px-3 py-1.5 rounded-lg text-xs font-inherit cursor-pointer hover:bg-bg-hover hover:border-accent hover:text-accent transition-all"
     on:click={() => dispatch('import')}
     title="Import cards from URL or text"
   >
     📥 Import
   </button>
   <button
-    class="toolbar-btn"
+    class="bg-bg-surface border border-border text-text-secondary px-3 py-1.5 rounded-lg text-xs font-inherit cursor-pointer hover:bg-bg-hover hover:border-accent hover:text-accent transition-all"
     on:click={() => dispatch('export')}
     title="Export deck as text"
   >
     📤 Export
   </button>
   <button 
-    class="toolbar-btn sync-btn" 
+    class="bg-bg-surface border border-border text-text-secondary px-3 py-1.5 rounded-lg text-xs font-inherit cursor-pointer hover:bg-bg-hover hover:border-accent hover:text-accent transition-all disabled:opacity-50 disabled:cursor-not-allowed" 
     on:click={() => dispatch('sync')}
     disabled={loading || scryfallLoading}
     title="Fetch card data from Scryfall"
   >
     {loading || scryfallLoading ? 'Loading...' : '↻ Sync Scryfall'}
   </button>
-  <div class="view-toggle">
+  <div class="flex gap-0.5 bg-bg-surface border border-border rounded-lg p-0.5">
     <button 
-      class="toggle-btn" 
-      class:active={viewMode === 'list'} 
+      class="bg-transparent border-none text-text-muted px-2.5 py-1 rounded cursor-pointer text-sm font-inherit hover:text-text-primary transition-colors {viewMode === 'list' ? 'bg-accent text-bg-primary' : ''}" 
       on:click={() => dispatch('viewChange', 'list')}
       title="List view"
     >☰</button>
     <button 
-      class="toggle-btn" 
-      class:active={viewMode === 'grid'} 
+      class="bg-transparent border-none text-text-muted px-2.5 py-1 rounded cursor-pointer text-sm font-inherit hover:text-text-primary transition-colors {viewMode === 'grid' ? 'bg-accent text-bg-primary' : ''}" 
       on:click={() => dispatch('viewChange', 'grid')}
       title="Grid view"
     >⊞</button>
   </div>
 </div>
-
-<style>
-  .header-toolbar {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    margin-top: 12px;
-  }
-
-  .toolbar-btn {
-    background: var(--bg-surface);
-    border: 1px solid var(--border);
-    color: var(--text-secondary);
-    padding: 6px 12px;
-    border-radius: var(--radius);
-    cursor: pointer;
-    font-size: 12px;
-    font-family: inherit;
-    transition: all 0.15s ease;
-  }
-
-  .toolbar-btn:hover:not(:disabled) {
-    background: var(--bg-hover);
-    border-color: var(--accent);
-    color: var(--accent);
-  }
-
-  .toolbar-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  .view-toggle {
-    display: flex;
-    gap: 2px;
-    background: var(--bg-surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 2px;
-  }
-
-  .toggle-btn {
-    background: none;
-    border: none;
-    color: var(--text-muted);
-    padding: 6px 10px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    font-family: inherit;
-  }
-
-  .toggle-btn:hover {
-    color: var(--text-primary);
-  }
-
-  .toggle-btn.active {
-    background: var(--accent);
-    color: #11111b;
-  }
-</style>

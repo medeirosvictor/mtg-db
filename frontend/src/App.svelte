@@ -36,8 +36,8 @@
     on:collectionChanged={handleCollectionChanged}
   />
 {:else if currentView === 'home'}
-  <div class="app-layout">
-    <header class="app-header">
+  <div class="flex flex-col h-screen">
+    <header class="flex items-center justify-between px-6 py-3 bg-bg-secondary border-b border-border">
       <CollectionSwitcher 
         collections={appState.collections || []}
         activeLabel={appState.collectionLabel}
@@ -50,51 +50,21 @@
     {/key}
   </div>
 {:else if currentView === 'deck'}
-  <div class="app-layout">
-    <header class="app-header">
+  <div class="flex flex-col h-screen">
+    <header class="flex items-center justify-between px-6 py-3 bg-bg-secondary border-b border-border">
       <CollectionSwitcher 
         collections={appState.collections || []}
         activeLabel={appState.collectionLabel}
         activePath={appState.collectionPath}
         on:collectionChanged={handleCollectionChanged}
       />
-      <button class="back-btn" on:click={() => currentView = 'home'}>← Back</button>
+      <button 
+        class="bg-transparent border-none text-text-secondary font-inherit text-sm px-3 py-1.5 rounded hover:bg-bg-hover hover:text-text-primary cursor-pointer"
+        on:click={() => currentView = 'home'}
+      >← Back</button>
     </header>
     {#key appState.collectionPath + currentSlug}
       <DeckView slug={currentSlug} on:navigate={handleNavigate} />
     {/key}
   </div>
 {/if}
-
-<style>
-  .app-layout {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-  }
-
-  .app-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 24px;
-    background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border);
-  }
-
-  .back-btn {
-    background: none;
-    border: none;
-    color: var(--text-secondary);
-    font-family: inherit;
-    font-size: 14px;
-    cursor: pointer;
-    padding: 6px 12px;
-    border-radius: var(--radius);
-  }
-
-  .back-btn:hover {
-    background: var(--bg-hover);
-    color: var(--text-primary);
-  }
-</style>

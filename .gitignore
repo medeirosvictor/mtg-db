@@ -1,9 +1,14 @@
 # Wails build output
 build/bin
 
-# Node
-node_modules
+# Frontend dependencies (regenerated with pnpm install)
+frontend/node_modules
+
+# Frontend build output (regenerated with pnpm build)
 frontend/dist
+
+# Wails generated JS bindings (regenerated on wails dev/build)
+frontend/wailsjs
 
 # App data (generated at build/runtime in %APPDATA%/mtg-db)
 # - config.json (collection paths)

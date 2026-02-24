@@ -6,118 +6,36 @@
   export let deck: DeckSummary;
   export let onClick: () => void;
 
-  $: cardCountClass = deck.cardCount === 100 ? 'count-ok' : 'count-warn';
+  $: cardCountClass = deck.cardCount === 100 ? 'text-green' : 'text-yellow';
 </script>
 
-<button class="deck-card" on:click={onClick}>
-  <div class="deck-header">
-    <h3 class="deck-title">{deck.title}</h3>
+<button 
+  class="w-full text-left bg-bg-secondary border border-border rounded-xl p-5 hover:bg-bg-hover hover:border-accent transition-all cursor-pointer text-text-primary font-inherit"
+  on:click={onClick}
+>
+  <div class="flex justify-between items-start gap-2 mb-3">
+    <h3 class="text-base font-semibold leading-snug">{deck.title}</h3>
     <StatusBadge status={deck.status} />
   </div>
 
-  <div class="deck-commander">
-    <span class="label">Commander</span>
-    <span class="value">{deck.commander}</span>
+  <div class="mb-3">
+    <span class="text-[11px] text-text-muted uppercase tracking-wide">Commander</span>
+    <span class="block text-sm text-accent mt-0.5">{deck.commander}</span>
   </div>
 
-  <div class="deck-meta">
-    <div class="meta-item">
+  <div class="flex justify-between items-center">
+    <div class="flex items-center gap-1.5">
       <ColorPips colors={deck.colors} />
     </div>
-    <div class="meta-item">
-      <span class="count {cardCountClass}">{deck.cardCount}</span>
-      <span class="label">cards</span>
+    <div class="flex items-center gap-1.5">
+      <span class="text-lg font-bold {cardCountClass}">{deck.cardCount}</span>
+      <span class="text-[11px] text-text-muted uppercase tracking-wide">cards</span>
     </div>
   </div>
 
   {#if deck.universe}
-    <div class="deck-universe">
-      <span class="label">{deck.universe}</span>
+    <div class="mt-2 pt-2 border-t border-border">
+      <span class="text-xs text-text-muted">{deck.universe}</span>
     </div>
   {/if}
 </button>
-
-<style>
-  .deck-card {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 20px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    text-align: left;
-    width: 100%;
-    color: var(--text-primary);
-    font-family: inherit;
-    font-size: inherit;
-  }
-
-  .deck-card:hover {
-    background: var(--bg-hover);
-    border-color: var(--accent);
-    transform: translateY(-2px);
-  }
-
-  .deck-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 12px;
-    gap: 8px;
-  }
-
-  .deck-title {
-    font-size: 16px;
-    font-weight: 600;
-    line-height: 1.3;
-  }
-
-  .deck-commander {
-    margin-bottom: 12px;
-  }
-
-  .deck-commander .value {
-    display: block;
-    font-size: 13px;
-    color: var(--accent);
-    margin-top: 2px;
-  }
-
-  .deck-meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .meta-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .label {
-    font-size: 11px;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .count {
-    font-size: 18px;
-    font-weight: 700;
-  }
-
-  .count-ok {
-    color: var(--green);
-  }
-
-  .count-warn {
-    color: var(--yellow);
-  }
-
-  .deck-universe {
-    margin-top: 8px;
-    padding-top: 8px;
-    border-top: 1px solid var(--border);
-  }
-</style>

@@ -1,3 +1,125 @@
+export namespace app {
+	
+	export class CollectionInfo {
+	    path: string;
+	    label: string;
+	    lastOpened: string;
+	    isActive: boolean;
+	    isValid: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new CollectionInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.path = source["path"];
+	        this.label = source["label"];
+	        this.lastOpened = source["lastOpened"];
+	        this.isActive = source["isActive"];
+	        this.isValid = source["isValid"];
+	    }
+	}
+	export class AppState {
+	    hasCollection: boolean;
+	    collectionPath: string;
+	    collectionLabel: string;
+	    collectionValid: boolean;
+	    collections: CollectionInfo[];
+	    needsSetup: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new AppState(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.hasCollection = source["hasCollection"];
+	        this.collectionPath = source["collectionPath"];
+	        this.collectionLabel = source["collectionLabel"];
+	        this.collectionValid = source["collectionValid"];
+	        this.collections = this.convertValues(source["collections"], CollectionInfo);
+	        this.needsSetup = source["needsSetup"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
+	export class DeckSummary {
+	    slug: string;
+	    title: string;
+	    commander: string;
+	    colors: string;
+	    status: string;
+	    cardCount: number;
+	    universe?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new DeckSummary(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.slug = source["slug"];
+	        this.title = source["title"];
+	        this.commander = source["commander"];
+	        this.colors = source["colors"];
+	        this.status = source["status"];
+	        this.cardCount = source["cardCount"];
+	        this.universe = source["universe"];
+	    }
+	}
+	export class SyncResult {
+	    deck?: deck.Deck;
+	    notFound: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new SyncResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.deck = this.convertValues(source["deck"], deck.Deck);
+	        this.notFound = source["notFound"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+
+}
+
 export namespace deck {
 	
 	export class ScryfallData {
@@ -6,6 +128,8 @@ export namespace deck {
 	    manaCost?: string;
 	    cmc?: number;
 	    imageUri?: string;
+	    backImageUri?: string;
+	    isDoubleFaced?: boolean;
 	    priceUsd?: string;
 	    priceUsdFoil?: string;
 	    colorIdentity?: string;
@@ -22,6 +146,8 @@ export namespace deck {
 	        this.manaCost = source["manaCost"];
 	        this.cmc = source["cmc"];
 	        this.imageUri = source["imageUri"];
+	        this.backImageUri = source["backImageUri"];
+	        this.isDoubleFaced = source["isDoubleFaced"];
 	        this.priceUsd = source["priceUsd"];
 	        this.priceUsdFoil = source["priceUsdFoil"];
 	        this.colorIdentity = source["colorIdentity"];
@@ -134,48 +260,38 @@ export namespace deck {
 
 }
 
-export namespace main {
+export namespace deckimport {
 	
-	export class CollectionInfo {
-	    path: string;
-	    label: string;
-	    lastOpened: string;
-	    isActive: boolean;
-	    isValid: boolean;
+	export class ImportedCard {
+	    quantity: number;
+	    name: string;
 	
 	    static createFrom(source: any = {}) {
-	        return new CollectionInfo(source);
+	        return new ImportedCard(source);
 	    }
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.path = source["path"];
-	        this.label = source["label"];
-	        this.lastOpened = source["lastOpened"];
-	        this.isActive = source["isActive"];
-	        this.isValid = source["isValid"];
+	        this.quantity = source["quantity"];
+	        this.name = source["name"];
 	    }
 	}
-	export class AppState {
-	    hasCollection: boolean;
-	    collectionPath: string;
-	    collectionLabel: string;
-	    collectionValid: boolean;
-	    collections: CollectionInfo[];
-	    needsSetup: boolean;
+	export class ImportResult {
+	    cards: ImportedCard[];
+	    deckName: string;
+	    source: string;
+	    error?: string;
 	
 	    static createFrom(source: any = {}) {
-	        return new AppState(source);
+	        return new ImportResult(source);
 	    }
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.hasCollection = source["hasCollection"];
-	        this.collectionPath = source["collectionPath"];
-	        this.collectionLabel = source["collectionLabel"];
-	        this.collectionValid = source["collectionValid"];
-	        this.collections = this.convertValues(source["collections"], CollectionInfo);
-	        this.needsSetup = source["needsSetup"];
+	        this.cards = this.convertValues(source["cards"], ImportedCard);
+	        this.deckName = source["deckName"];
+	        this.source = source["source"];
+	        this.error = source["error"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -195,31 +311,6 @@ export namespace main {
 		    }
 		    return a;
 		}
-	}
-	
-	export class DeckSummary {
-	    slug: string;
-	    title: string;
-	    commander: string;
-	    colors: string;
-	    status: string;
-	    cardCount: number;
-	    universe?: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new DeckSummary(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.slug = source["slug"];
-	        this.title = source["title"];
-	        this.commander = source["commander"];
-	        this.colors = source["colors"];
-	        this.status = source["status"];
-	        this.cardCount = source["cardCount"];
-	        this.universe = source["universe"];
-	    }
 	}
 
 }

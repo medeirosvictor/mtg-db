@@ -1,6 +1,7 @@
 package main
 
 import (
+	"app/internal/app"
 	"embed"
 
 	"github.com/wailsapp/wails/v2"
@@ -12,7 +13,7 @@ import (
 var assets embed.FS
 
 func main() {
-	app := NewApp()
+	application := app.NewApp()
 
 	err := wails.Run(&options.App{
 		Title:     "MTG Collection Manager",
@@ -23,11 +24,10 @@ func main() {
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
-		// Dark background matching the app theme
 		BackgroundColour: &options.RGBA{R: 17, G: 17, B: 27, A: 1},
-		OnStartup:        app.startup,
+		OnStartup:        application.Startup,
 		Bind: []interface{}{
-			app,
+			application,
 		},
 	})
 

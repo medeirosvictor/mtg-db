@@ -28,7 +28,7 @@
 
 ---
 
-## Current State of the Repo
+## Current Repo Structure
 
 ```
 mtg-db/                              ← App repo (code only)
@@ -48,27 +48,32 @@ mtg-db/                              ← App repo (code only)
   build/
   README.md
   DEV-PLAN.md
-
-~/mtg-collection/                    ← Your collection (separate from app repo)
-  decks/
-    abzan-desert/      100 cards  ✅ Owned     (Hazezon — Abzan Lands)
-    avatar-ally/        102 cards  📋 Planned   (Tazri — 5C Allies)
-    desert-dune/         99 cards  ✅ Owned     (Yuma — Naya Landfall)
-    finalfantasy-voltron/133 cards 📋 Planned   (Cloud — Esper Voltron)
-    jumpscare/          100 cards  ✅ Owned     (Arixmethes — Simic Big)
-    lotr-aragorn/        99 cards  ✅ Owned     (Aragorn — 4C Humans)
-    sultai-rogues/      122 cards  📦 Disassembled (Ukkima — Sultai Rogues)
-    warhammer-spellslinger/106 cards ✅ Owned   (Lilah — Izzet Spells)
-  wishlists/
-    master-purchase-list.txt       226 cards across planned decks
-  history/
-    previous-order.txt
-  scripts/
-    find-overlaps.sh               Bash — finds shared cards across decks
-    validate-decks.sh              Bash — checks deck sizes
 ```
 
-**Card format** (varies slightly between decks — parser must handle all):
+**Collection folder** (user-selected, separate from app repo):
+```
+~/mtg-collection/
+  decks/
+    <deck-slug>/
+      deck.txt                       ← Required (card list)
+      info.md                        ← Optional (metadata)
+      wishlist.txt                   ← Optional (per-deck wishlist)
+      images/                        ← Optional (per-deck image overrides)
+  wishlists/                         ← Optional (global wishlists)
+  history/                           ← Optional (order history, read-only)
+```
+
+**App data** (`%APPDATA%/mtg-db/`):
+```
+  config.json                        ← Collection paths + preferences
+  cards.db                           ← SQLite card/price cache
+  images/
+    cache/                           ← Scryfall card images
+    custom/                          ← Global custom image overrides
+    mpc/                             ← MPC Autofill cached art
+```
+
+**Card format** (parser handles all variants):
 ```
 1 Card Name                          ← qty + name (no "x")
 1x Card Name                        ← qty + "x" + name
@@ -79,160 +84,20 @@ mtg-db/                              ← App repo (code only)
 
 ---
 
-## Phase 0 — Project Setup ✅
+## What's Done
 
-**Goal:** Wails project scaffolded, builds, opens a window, reads deck files.
-
-- [x] Install Wails CLI, Go, Node, pnpm
-- [x] `wails init -n mtg-db -t svelte-ts` (project lives at repo root, not nested)
-- [x] Project structure (to be reorganized in Phase 0.5):
-  ```
-  main.go
-  app.go                    ← Wails app struct, methods bound to frontend
-  internal/
-    deck/                   ← Deck file parser (read/write .txt + info.md)
-    config/                 ← App config (data directory path, preferences)
-    db/                     ← (placeholder for Phase 1 SQLite)
-  frontend/                 ← Svelte + Vite app
-    src/
-      App.svelte            ← Client-side router
-      lib/                  ← Types, color utils
-      views/                ← DeckList, DeckView
-      components/           ← DeckCard, ColorPips, StatusBadge
-  build/
-  ```
-- [x] Deck parser in Go:
-  - Parses all format variants (`1 Name`, `1x Name`, `1x Name (SET) 123`, `*F*`, DFCs, `{num}`, hyphenated collector numbers)
-  - Reads `info.md` for commander, colors, status, strategy, universe
-  - Reads `wishlist.txt`
-  - Handles mixed formats within the same file
-  - **14 unit tests + integration tests: 861 cards, 8 decks, 0 parse errors**
-- [x] Bind `GetAllDecks()`, `GetDeck(slug)`, `ReloadDecks()` to frontend
-- [x] Frontend: deck list dashboard with color pips, status badges, card counts, stats
-- [x] Frontend: deck detail view with sorted card table and wishlist section
-- [x] Dark theme (Catppuccin Mocha-inspired)
-- [x] Builds and runs on Windows — **10MB binary**
-- [x] pnpm for frontend package management
+- Wails project scaffolded, builds and runs on Windows (10MB binary)
+- Deck parser with 14 unit + integration tests (861 cards, 8 decks, 0 parse errors)
+- Frontend: deck list dashboard with color pips, status badges, card counts, stats
+- Frontend: deck detail view with sorted card table and wishlist section
+- Dark theme (Catppuccin Mocha-inspired)
+- Collection folder separation: app is standalone, points at any collection folder
+- Config in `%APPDATA%/mtg-db/config.json`, first-launch folder picker, collection switcher
+- Basic deck editing: add/remove cards, quantity adjust (±), deck name/description editing
 
 ---
 
-## Phase 0.5 — Collection Folder Separation ✅
-
-**Goal:** Decouple the app from the card data. The app is a standalone binary that points at any collection folder on disk. Your decks, wishlists, and history are **not** part of the app repo.
-
-### Why
-
-The repo currently mixes app source code (`main.go`, `internal/`, `frontend/`) with personal card data (`decks/`, `wishlists/`, `history/`, `scripts/`). These are two unrelated concerns. The app should be a tool that reads *any* collection folder, not just the one it ships with.
-
-### Collection Folder Convention
-
-Any folder the app points at should follow this structure:
-
-```
-<collection-folder>/
-  decks/                             ← Required
-    <deck-slug>/
-      deck.txt                       ← Required (card list)
-      info.md                        ← Optional (metadata — app can generate skeleton)
-      wishlist.txt                   ← Optional (per-deck wishlist)
-      images/                        ← Optional (per-deck image overrides)
-  wishlists/                         ← Optional (global wishlists)
-  history/                           ← Optional (order history, read-only)
-```
-
-The app validates: folder exists → has `decks/` → has at least one subfolder with `deck.txt`. Missing optional folders are silently ignored.
-
-### App Data Location
-
-App-generated data (cache, config) lives in the **OS app data directory**, not inside the collection:
-
-```
-%APPDATA%/mtg-db/                    ← Windows
-~/.local/share/mtg-db/               ← Linux
-~/Library/Application Support/mtg-db/ ← macOS
-
-  config.json                        ← Collection paths + preferences
-  cards.db                           ← SQLite card/price cache
-  images/
-    cache/                           ← Scryfall card images
-    custom/                          ← Global custom image overrides
-    mpc/                             ← MPC Autofill cached art
-```
-
-This keeps the collection folder **pristine** — just plain text files and markdown. The cache is fully rebuildable.
-
-### Config Schema
-
-```json
-{
-  "activeCollection": "C:\\Users\\Victor\\mtg-collection",
-  "collections": [
-    {
-      "path": "C:\\Users\\Victor\\mtg-collection",
-      "label": "My Decks",
-      "lastOpened": "2026-02-23T17:30:00Z"
-    },
-    {
-      "path": "D:\\Shared\\friend-decks",
-      "label": "Jake's Decks",
-      "lastOpened": "2026-02-20T12:00:00Z"
-    }
-  ],
-  "preferences": {
-    "proxyThreshold": 5.00,
-    "priceStalenessHours": 24
-  }
-}
-```
-
-### Tasks
-
-- [x] **Config rewrite:** `internal/config/config.go` reads/writes `%APPDATA%/mtg-db/config.json`
-  - Replace `RootDir` with OS app data path for cache/db
-  - Collection path comes from config, not from `findRootDir()` heuristic
-- [x] **First launch flow:** No config → Wails native folder picker dialog → "Select your collection folder"
-  - Validate selected folder (must have `decks/` with at least one deck)
-  - If invalid, show friendly error: "This folder doesn't look like an MTG collection. Expected a `decks/` subfolder."
-  - Option to "Initialize a new collection here" (creates `decks/` skeleton)
-- [x] **Collection switcher:** dropdown in the app header
-  - Shows all known collections by label
-  - "Open another folder…" option opens the folder picker
-  - Switching reloads all decks instantly
-  - Labels auto-derived from folder name, editable
-- [x] **Remove collection data from app repo:**
-  - Moved `decks/`, `wishlists/`, `history/`, `scripts/` to `~/mtg-collection`
-  - Removed `data/` directory (now lives in `%APPDATA%`)
-  - Updated `.gitignore`
-  - App repo becomes pure code: `main.go`, `app.go`, `internal/`, `frontend/`, `build/`, `wails.json`
-- [x] **Update `app.go`:** remove `findRootDir()`, replace with config-based path lookup
-- [x] **Broken path handling:** if saved collection path no longer exists on launch → show picker with error message
-
-### Final Repo Structure
-
-```
-mtg-db/                              ← App repo (code only)
-  main.go
-  app.go
-  go.mod, go.sum
-  wails.json
-  internal/
-    config/                          ← Config (reads %APPDATA%/mtg-db/config.json)
-    deck/                            ← Deck parser
-    db/                              ← SQLite (Phase 1A)
-  frontend/
-    src/
-      App.svelte
-      lib/
-      views/
-      components/
-  build/
-  README.md
-  DEV-PLAN.md
-```
-
----
-
-## Phase 1 — Core MVP (Deck Viewer + Prices)
+## Phase 1 — Scryfall Integration + Visual Deck Browser
 
 **Goal:** Browse your decks visually with card images and prices. This is the "I can actually use this" milestone.
 
@@ -302,29 +167,9 @@ mtg-db/                              ← App repo (code only)
 - [ ] Results show: card name, which deck(s) it's in, quantity, price
 - [ ] Fast — should feel instant, no loading spinners
 
-### 1E — Basic Deck Editing (~10-14 hours total)
+### 1E — Remaining Editing Polish
 
-> No Scryfall dependency — pure file read/write using existing parser + writer.
-> Add-card UX improves once 1A lands (autocomplete, validation), but works standalone.
-
-#### Add / Remove Cards (~4-6 hrs)
-- [x] Go backend: `AddCard(slug, name, qty)` — appends `{qty}x {name}` to `deck.txt`, or bumps qty if card already exists
-- [x] Go backend: `RemoveCard(slug, name)` — removes the card line from `deck.txt`
-- [x] Frontend: text input (or search box) to add a card by name
-- [x] Frontend: "Remove from deck" in card row context menu
-- [x] Handle duplicates: if card already in deck, increment quantity instead of adding a new line
-
-#### Quantity Adjust (~2-3 hrs)
-- [x] Go backend: `UpdateCardQty(slug, cardName, newQty)` — updates quantity in `deck.txt`; removes card if qty reaches 0
-- [x] Frontend: `+` / `−` buttons on each card row (visible on hover or always visible)
-- [x] Debounced writes — don't thrash disk on rapid clicks
-- [x] Especially useful for lands (quickly set "7x Forest")
-
-#### Edit Deck Name & Description (~2-3 hrs)
-- [x] Go backend: `UpdateDeckInfo(slug, title, strategy)` — writes updated `info.md` via existing `WriteInfoFile()`
-- [x] Frontend: click-to-edit on deck title and strategy in the deck header
-- [x] Slug (folder name) stays unchanged — only display title in `info.md` changes
-- [ ] Optional: edit other info.md fields (status, colors, universe) via a settings/edit modal
+- [ ] Edit other info.md fields (status, colors, universe) via a settings/edit modal
 
 ---
 
@@ -375,14 +220,11 @@ mtg-db/                              ← App repo (code only)
 
 ## Phase 3 — Advanced Deck Editing + Card Management
 
-**Goal:** Advanced editing features building on Phase 1E's basic add/remove/qty editing.
-
-> **Note:** Basic add/remove cards, quantity adjust (±), and deck name/description editing moved to Phase 1E.
-> Phase 3 focuses on Scryfall-powered features, cross-deck operations, and import.
+**Goal:** Scryfall-powered editing features, cross-deck operations, and import.
 
 ### 3A — Advanced Card Operations
 
-- [ ] Add card to deck: search by name → **Scryfall autocomplete** → add to `deck.txt` (upgrades 1E's plain text input)
+- [ ] Add card to deck: search by name → **Scryfall autocomplete** → add to `deck.txt`
 - [ ] Move card between decks (removes from source, adds to target, updates both `.txt` files)
 - [ ] Move card to/from wishlist
 - [ ] Undo/redo for edits
@@ -554,9 +396,7 @@ Everything below is post-MVP polish. Build if/when it's useful.
 
 | Milestone | What you get | Replaces |
 |-----------|-------------|----------|
-| **Phase 0 done** | App opens, reads your decks, shows a list | Manual file browsing |
-| **Phase 0.5 done** | App is standalone binary. Pick any collection folder, switch between collections. Card data removed from app repo. | Hardcoded paths, mixed repo |
-| **Phase 1 done** | Visual deck browser with card images + prices, sideboard support, basic card add/remove/qty editing, deck name/description editing | Scryfall manual lookups, hand-editing `.txt` for simple changes |
+| **Phase 1 done** | Visual deck browser with card images, prices, sideboard support, search | Scryfall manual lookups |
 | **Phase 2 done** | Collection tracking, wishlists, proxy planning, overlap detection | `find-overlaps.sh`, `validate-decks.sh`, spreadsheets |
 | **Phase 3 done** | Advanced deck editor (Scryfall autocomplete, cross-deck moves, import, printing selection) | Remaining hand-editing edge cases |
 | **Phase 4 done** | Custom art, MPC Autofill proxy art browser | Manually saving images |
