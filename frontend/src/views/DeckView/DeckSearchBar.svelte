@@ -11,7 +11,7 @@
   }
 </script>
 
-<div class="flex items-center gap-2 bg-bg-secondary border border-border rounded-lg px-3.5 py-2 mb-4 transition-all focus-within:border-accent focus-within:shadow-[0_0_0_2px_rgba(137,180,250,0.15)]">
+<div class="flex items-center gap-2 bg-bg-secondary border border-border rounded-lg px-3.5 py-2 my-3 transition-all focus-within:border-accent focus-within:shadow-[0_0_0_2px_rgba(137,180,250,0.15)]">
   <span class="text-sm flex-shrink-0">🔍</span>
   <input
     type="text"

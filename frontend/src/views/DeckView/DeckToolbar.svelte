@@ -38,12 +38,12 @@
   </button>
   <div class="flex gap-0.5 bg-bg-surface border border-border rounded-lg p-0.5">
     <button 
-      class="bg-transparent border-none text-text-muted px-2.5 py-1 rounded cursor-pointer text-sm font-inherit hover:text-text-primary transition-colors {viewMode === 'list' ? 'bg-accent text-bg-primary' : ''}" 
+      class="px-2.5 py-1 rounded text-sm transition-all {viewMode === 'list' ? 'bg-accent text-bg-primary shadow-sm' : 'bg-transparent text-text-muted hover:text-text-primary'}" 
       on:click={() => dispatch('viewChange', 'list')}
       title="List view"
     >☰</button>
     <button 
-      class="bg-transparent border-none text-text-muted px-2.5 py-1 rounded cursor-pointer text-sm font-inherit hover:text-text-primary transition-colors {viewMode === 'grid' ? 'bg-accent text-bg-primary' : ''}" 
+      class="px-2.5 py-1 rounded text-sm transition-all {viewMode === 'grid' ? 'bg-accent text-bg-primary shadow-sm' : 'bg-transparent text-text-muted hover:text-text-primary'}" 
       on:click={() => dispatch('viewChange', 'grid')}
       title="Grid view"
     >⊞</button>
