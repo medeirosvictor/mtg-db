@@ -42,20 +42,7 @@ internal/             # Go backend packages
 frontend/             # Svelte + Vite frontend
 ```
 
-## Decks
-
-| Folder | Deck | Status |
-|--------|------|--------|
-| `warhammer-spellslinger` | Warhammer 40K — Izzet Spellslinger | ✅ Owned |
-| `abzan-desert` | Abzan Desert — Lands Matter | ✅ Owned |
-| `jumpscare` | Duskmourn — Simic Big Creatures | ✅ Owned |
-| `desert-dune` | Thunderjunction — Naya Plants/Landfall | ✅ Owned |
-| `lotr-aragorn` | LOTR — 4-Color Human Tribal | ✅ Owned |
-| `sultai-rogues` | Sultai Rogues — Unblockable | 📦 Disassembled |
-| `avatar-ally` | Avatar TLA — 5-Color Allies | 📋 Planned |
-| `finalfantasy-voltron` | Final Fantasy — Esper Voltron/Ninjas | 📋 Planned |
-
-## Card Format
+# Card Format
 
 Plain text, always the source of truth:
 ```
