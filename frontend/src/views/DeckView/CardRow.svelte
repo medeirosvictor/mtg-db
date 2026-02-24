@@ -10,6 +10,7 @@
   export let isEditing: boolean = false;
   export let editValue: string = '';
   export let editError: string = '';
+  export let isSelected: boolean = false;
 
   const dispatch = createEventDispatcher<{
     contextmenu: MouseEvent;
@@ -18,6 +19,7 @@
     editCancel: void;
     editKeydown: KeyboardEvent;
     flip: void;
+    select: void;
   }>();
 
   function getBadges(card: Card): string[] {
@@ -57,11 +59,20 @@
     class:basic-land={isBasicLand}
     class:is-commander={isCommander}
     class:is-not-found={isNotFound}
+    class:is-selected={isSelected}
     on:contextmenu={(e) => dispatch('contextmenu', e)}
     on:dblclick={() => dispatch('dblclick')}
     role="button"
     tabindex="0"
   >
+    <span class="col-select">
+      <input 
+        type="checkbox" 
+        checked={isSelected} 
+        on:change={() => dispatch('select')}
+        on:click|stopPropagation
+      />
+    </span>
     <span class="col-qty">{card.quantity}×</span>
     <span class="col-name">
       {#if isNotFound}
@@ -120,6 +131,14 @@
     background: var(--bg-hover);
   }
 
+  .card-row.is-selected {
+    background: rgba(137, 180, 250, 0.1);
+  }
+
+  .card-row.is-selected:hover {
+    background: rgba(137, 180, 250, 0.15);
+  }
+
   .card-row.basic-land {
     color: var(--text-muted);
   }
@@ -154,6 +173,21 @@
     width: 40px;
     flex-shrink: 0;
     color: var(--text-muted);
+  }
+
+  .col-select {
+    width: 32px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .col-select input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--accent);
   }
 
   .col-name {

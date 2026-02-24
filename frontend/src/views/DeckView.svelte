@@ -43,9 +43,107 @@
   // DFC flip state
   let flippedCards: Record<string, boolean> = {};
 
+  // Selection state
+  let selectedCards: Set<string> = new Set();
+  let selectAll: boolean = false;
+
   // Search state
   let searchQuery = '';
   let searchBarComponent: DeckSearchBar;
+
+  // Selection handlers
+  function toggleCardSelection(cardName: string) {
+    if (selectedCards.has(cardName)) {
+      selectedCards.delete(cardName);
+    } else {
+      selectedCards.add(cardName);
+    }
+    selectedCards = selectedCards; // trigger reactivity
+    updateSelectAll();
+  }
+
+  function toggleSelectAll() {
+    if (selectAll) {
+      selectedCards.clear();
+    } else {
+      sortedCards.forEach(card => selectedCards.add(card.name));
+    }
+    selectedCards = selectedCards;
+    selectAll = !selectAll;
+  }
+
+  function updateSelectAll() {
+    if (sortedCards.length === 0) {
+      selectAll = false;
+    } else {
+      selectAll = sortedCards.every(card => selectedCards.has(card.name));
+    }
+  }
+
+  async function toggleTagOnSelected(tag: string) {
+    if (!deck || selectedCards.size === 0) return;
+    
+    const cardNames = Array.from(selectedCards);
+    for (const cardName of cardNames) {
+      await ToggleCardTag(slug, cardName, tag);
+    }
+    
+    // Reload deck to get updated data
+    const reloaded = await GetDeckBasic(slug);
+    if (reloaded) {
+      deck = reloaded;
+    }
+    
+    // Clear selection after tagging
+    selectedCards.clear();
+    selectedCards = selectedCards;
+    selectAll = false;
+  }
+
+  function showSelectionContextMenu(e: MouseEvent) {
+    e.preventDefault();
+    menuX = e.clientX;
+    menuY = e.clientY;
+
+    const hasProxy = Array.from(selectedCards).some(name => 
+      sortedCards.find(c => c.name === name)?.tags?.includes('proxy')
+    );
+    const hasWishlist = Array.from(selectedCards).some(name => 
+      sortedCards.find(c => c.name === name)?.tags?.includes('wishlist')
+    );
+
+    menuItems = [
+      {
+        label: `${selectedCards.size} card${selectedCards.size > 1 ? 's' : ''} selected`,
+        icon: '📋',
+        disabled: true,
+        action: () => {},
+      },
+      { separator: true },
+      {
+        label: hasProxy ? 'Unmark as Proxy' : 'Mark as Proxy',
+        icon: '🖨️',
+        action: () => toggleTagOnSelected('proxy'),
+      },
+      {
+        label: hasWishlist ? 'Unmark as Wishlisted' : 'Mark as Wishlisted',
+        icon: '🛒',
+        action: () => toggleTagOnSelected('wishlist'),
+      },
+      { separator: true },
+      {
+        label: 'Clear Selection',
+        icon: '✕',
+        action: () => {
+          selectedCards.clear();
+          selectedCards = selectedCards;
+          selectAll = false;
+        },
+      },
+    ];
+
+    menuVisible = true;
+  }
 
   // Modal state
   let showImportModal = false;
@@ -59,15 +157,12 @@
 
   function toggleFlip(cardName: string) {
     if (flippedCards[cardName]) {
-      delete flippedCards[cardName];
+      // Use object spread to create a new object without the key
+      const { [cardName]: _, ...rest } = flippedCards;
+      flippedCards = rest;
     } else {
-      flippedCards[cardName] = true;
+      flippedCards = { ...flippedCards, [cardName]: true };
     }
-    flippedCards = flippedCards;
-  }
-
-  function isFlipped(cardName: string): boolean {
-    return !!flippedCards[cardName];
   }
 
   function handleGlobalKeydown(e: KeyboardEvent) {
@@ -84,14 +179,47 @@
     await loadDeck();
   });
 
+  // Check if any card has cached Scryfall data
+  function hasCachedData(cards: Card[]): boolean {
+    if (!cards || cards.length === 0) return false;
+    // Check if at least one card has Scryfall data cached
+    return cards.some(card => card.scryFall?.imageUri || card.scryFall?.oracleText);
+  }
+
   async function loadDeck() {
     try {
       loading = true;
       error = '';
+      
+      // First, try to get the full deck with cached Scryfall data
+      // This will return cached data if available, or fetch fresh if not
+      try {
+        const result = await GetDeck(slug);
+        if (result) {
+          deck = result.deck;
+          if (result.notFound && result.notFound.length > 0) {
+            notFoundCards = new Set(result.notFound.map(n => n.toLowerCase()));
+          }
+          // Successfully loaded with Scryfall data
+          console.log('Deck loaded with Scryfall data');
+          loading = false;
+          return;
+        }
+      } catch (e) {
+        // GetDeck failed, fall back to GetDeckBasic
+        console.log('GetDeck failed, falling back to GetDeckBasic:', e);
+      }
+      
+      // Fallback: Load basic deck without Scryfall data
       const result = await GetDeckBasic(slug);
       deck = result;
       if (!deck) {
         error = `Deck "${slug}" not found`;
+      }
+      
+      // Check if we have cached data that could be loaded
+      if (deck && hasCachedData(deck.cards)) {
+        console.log('Cached Scryfall data available - user can click Sync to load');
       }
     } catch (e) {
       console.error('Failed to load deck:', e);
@@ -182,6 +310,11 @@
   $: displayCommander = getCommanderNames(deck?.cards || []) || deck?.info?.commander || 'None set';
 
   $: totalPrice = calculateTotalPrice(deck?.cards || []);
+
+  // Update selectAll when sorted cards change
+  $: if (sortedCards) {
+    updateSelectAll();
+  }
 
   async function toggleTag(cardName: string, tag: string) {
     if (!deck) return;
@@ -283,8 +416,23 @@
       {#if viewMode === 'list'}
         <section class="card-list">
           <h2>Cards ({sortedCards.length} unique, {deck.cardCount} total)</h2>
-          <div class="cards-table">
+          <div 
+            class="cards-table"
+            on:contextmenu={(e) => {
+              if (selectedCards.size > 0) {
+                showSelectionContextMenu(e);
+              }
+            }}
+          >
             <div class="table-header">
+              <span class="col-select">
+                <input 
+                  type="checkbox" 
+                  checked={selectAll} 
+                  on:change={toggleSelectAll}
+                  title={selectAll ? 'Deselect all' : 'Select all'}
+                />
+              </span>
               <span class="col-qty">#</span>
               <span class="col-name">Card Name</span>
               <span class="col-tags">Tags</span>
@@ -297,10 +445,12 @@
                 isNotFound={isNotFound(card.name)}
                 isBasicLand={isBasicLand(card.name)}
                 isCommander={(card.tags || []).includes('commander')}
-                isFlipped={isFlipped(card.name)}
+                isFlipped={!!flippedCards[card.name]}
                 isEditing={editingCard === card.name}
                 editValue={editingCard === card.name ? editValue : ''}
                 editError={editingCard === card.name ? editError : ''}
+                isSelected={selectedCards.has(card.name)}
+                on:select={() => toggleCardSelection(card.name)}
                 on:contextmenu={(e) => showCardContextMenu(e.detail, card)}
                 on:dblclick={() => startEditing(card)}
                 on:editSave={() => saveEditing(card.name)}
@@ -321,7 +471,7 @@
                 isNotFound={isNotFound(card.name)}
                 isBasicLand={isBasicLand(card.name)}
                 isCommander={(card.tags || []).includes('commander')}
-                isFlipped={isFlipped(card.name)}
+                isFlipped={!!flippedCards[card.name]}
                 on:contextmenu={(e) => showCardContextMenu(e.detail, card)}
                 on:flip={() => toggleFlip(card.name)}
               />
@@ -425,6 +575,21 @@
   .col-qty {
     width: 40px;
     flex-shrink: 0;
+  }
+
+  .col-select {
+    width: 32px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .col-select input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--accent);
   }
 
   .col-name {
