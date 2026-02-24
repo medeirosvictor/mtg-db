@@ -10,7 +10,7 @@
     calculateTotalPrice, 
     getCommanderNames 
   } from '../lib/cardUtils';
-  import { GetDeck, GetDeckBasic, ToggleCardTag, UpdateCardText } from '../../wailsjs/go/app/App';
+  import { GetDeck, GetDeckBasic, ToggleCardTag, UpdateCardText, UpdateDeckInfo, UpdateDeckStatus } from '../../wailsjs/go/app/App';
   import DeckHeader from './DeckView/DeckHeader.svelte';
   import DeckToolbar from './DeckView/DeckToolbar.svelte';
   import DeckSearchBar from './DeckView/DeckSearchBar.svelte';
@@ -315,6 +315,46 @@
     }
   }
 
+  async function handleUpdateTitle(newTitle: string) {
+    if (!deck) return;
+    const result = await UpdateDeckInfo(slug, newTitle, deck.info.strategy || '');
+    if (result === '') {
+      deck.info.title = newTitle;
+      deck = deck; // trigger reactivity
+    } else {
+      console.error('Failed to update title:', result);
+    }
+  }
+
+  async function handleUpdateStrategy(newStrategy: string) {
+    if (!deck) return;
+    const result = await UpdateDeckInfo(slug, deck.info.title, newStrategy);
+    if (result === '') {
+      deck.info.strategy = newStrategy;
+      deck = deck; // trigger reactivity
+    } else {
+      console.error('Failed to update strategy:', result);
+    }
+  }
+
+  async function handleUpdateStatus(newStatus: string) {
+    if (!deck) return;
+    const result = await UpdateDeckStatus(slug, newStatus);
+    if (result === '') {
+      // Update the status in deck.info.status
+      if (newStatus === 'Owned') {
+        deck.info.status = '✅ Owned';
+      } else if (newStatus === 'Planned') {
+        deck.info.status = '📋 Planned';
+      } else if (newStatus === 'Disassembled') {
+        deck.info.status = '🔧 Disassembled';
+      }
+      deck = deck; // trigger reactivity
+    } else {
+      console.error('Failed to update status:', result);
+    }
+  }
+
   function showCardContextMenu(e: MouseEvent, card: Card) {
     e.preventDefault();
     menuX = e.clientX;
@@ -384,7 +424,14 @@
       ← Back
     </button>
 
-    <DeckHeader {deck} {totalPrice} {displayCommander} />
+    <DeckHeader 
+      {deck} 
+      {totalPrice} 
+      {displayCommander} 
+      on:updateTitle={(e) => handleUpdateTitle(e.detail)}
+      on:updateStrategy={(e) => handleUpdateStrategy(e.detail)}
+      on:updateStatus={(e) => handleUpdateStatus(e.detail)}
+    />
     
     <DeckToolbar 
       {loading} 

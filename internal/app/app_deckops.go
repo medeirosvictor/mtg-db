@@ -51,6 +51,54 @@ func (a *App) UpdateDeckInfo(slug string, title string, strategy string) string 
 	return ""
 }
 
+// UpdateDeckStatus updates the deck's status in info.md.
+func (a *App) UpdateDeckStatus(slug string, status string) string {
+	if a.config == nil || !a.config.HasActiveCollection() {
+		return "No active collection"
+	}
+
+	deckDir := filepath.Join(a.config.DecksDir(), slug)
+	infoPath := filepath.Join(deckDir, "info.md")
+
+	var deckIdx int = -1
+	for i, d := range a.decks {
+		if d.Slug == slug {
+			deckIdx = i
+			break
+		}
+	}
+
+	info := deck.DeckInfo{}
+	if deckIdx >= 0 {
+		d := &a.decks[deckIdx]
+		info.Title = d.Info.Title
+		info.Strategy = d.Info.Strategy
+		info.Colors = d.Info.Colors
+		info.Commander = d.Info.Commander
+		info.Universe = d.Info.Universe
+	}
+
+	// Format status with emoji
+	info.Status = "📋 " + status
+	if status == "Owned" {
+		info.Status = "✅ Owned"
+	} else if status == "Planned" {
+		info.Status = "📋 Planned"
+	} else if status == "Disassembled" {
+		info.Status = "🔧 Disassembled"
+	}
+
+	if err := deck.WriteInfoFile(infoPath, info); err != nil {
+		return fmt.Sprintf("Failed to write info file: %v", err)
+	}
+
+	if deckIdx >= 0 {
+		a.decks[deckIdx].Info.Status = info.Status
+	}
+
+	return ""
+}
+
 // ImportDeck imports cards into a deck from a URL or raw text.
 func (a *App) ImportDeck(slug string, input string, mode string) *deckimport.ImportResult {
 	if a.config == nil || !a.config.HasActiveCollection() {
