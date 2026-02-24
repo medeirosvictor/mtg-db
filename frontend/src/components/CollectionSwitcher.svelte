@@ -80,7 +80,7 @@
   </button>
 
   {#if open}
-    <div class="dropdown" on:click|stopPropagation>
+    <div class="dropdown" role="menu" tabindex="-1" on:click|stopPropagation on:keydown|stopPropagation>
       {#if otherCollections.length > 0}
         <div class="dropdown-section">
           <div class="dropdown-heading">Switch Collection</div>

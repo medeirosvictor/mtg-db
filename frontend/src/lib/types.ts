@@ -10,6 +10,17 @@ export interface DeckSummary {
   universe?: string;
 }
 
+export interface ScryFallData {
+  oracleText?: string;
+  typeLine?: string;
+  manaCost?: string;
+  cmc?: number;
+  imageUri?: string;
+  priceUsd?: string;
+  priceUsdFoil?: string;
+  colorIdentity?: string;
+}
+
 export interface Card {
   quantity: number;
   name: string;
@@ -17,6 +28,7 @@ export interface Card {
   collectorNumber?: string;
   foil?: boolean;
   tags?: string[];
+  scryFall?: ScryFallData;
 }
 
 export interface DeckInfo {

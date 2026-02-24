@@ -3,10 +3,32 @@
 import {main} from '../models';
 import {deck} from '../models';
 
+export function AddCards(arg1:string,arg2:string):Promise<string>;
+
 export function GetAllDecks():Promise<Array<main.DeckSummary>>;
+
+export function GetAppState():Promise<main.AppState>;
 
 export function GetDeck(arg1:string):Promise<deck.Deck>;
 
+export function GetDeckBasic(arg1:string):Promise<deck.Deck>;
+
+export function InitializeAndSelectFolder():Promise<string>;
+
 export function ReloadDecks():Promise<Array<main.DeckSummary>>;
 
+export function RemoveCard(arg1:string,arg2:string):Promise<string>;
+
+export function RemoveKnownCollection(arg1:string):Promise<string>;
+
+export function RenameCollection(arg1:string,arg2:string):Promise<string>;
+
+export function SelectCollectionFolder():Promise<string>;
+
+export function SwitchCollection(arg1:string):Promise<string>;
+
 export function ToggleCardTag(arg1:string,arg2:string,arg3:string):Promise<deck.Deck>;
+
+export function UpdateCardQuantity(arg1:string,arg2:string,arg3:number):Promise<string>;
+
+export function UpdateDeckInfo(arg1:string,arg2:string,arg3:string):Promise<string>;

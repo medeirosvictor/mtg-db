@@ -9,49 +9,28 @@
 1x Trygon Predator
 1x Failed Fording
 1x Executioner's Hood
-1x Fynn, the fangbearer
-1x Incubation // Incongruity
+2x Fynn, the fangbearer
+2x Incubation // Incongruity
 1x Tranquil Thicket
-1x Overflowing Basin
-1x Notion Rain
-1x Fake own death (Fingir a propria morte)
-1x Give in to violence
+2x Overflowing Basin
+2x Notion Rain
+2x Fake own death (Fingir a propria morte)
+2x Give in to violence
 1x Skyship Plunderer
-1x Cazur, Ruthless Stalker
-1x Take the fall
+2x Cazur, Ruthless Stalker
+2x Take the fall
 1x Ukkima, Stalking Shadow
 1x Ramirez DePietro, Pillager
 1x Abomination of Guldul
-1x Ghost of Ramirez DePietro
-1x Dream-Thief's bandana
-1x Disinformation Campaign
+2x Ghost of Ramirez DePietro
+2x Dream-Thief's bandana
+2x Disinformation Campaign
 1x Alora, Merry Thief
-1x Malcolm, Keen-Eyed Navigator
-1x Command tower
-1x Secret Passage
-1x Temple of Deceit
+2x Malcolm, Keen-Eyed Navigator
+2x Command tower
+2x Secret Passage
+2x Temple of Deceit
 1x Ash BarreExecutioner's Hood
-1x Fynn, the fangbearer
-1x Incubation // Incongruity
-1x Tranquil Thicket
-1x Overflowing Basin
-1x Notion Rain
-1x Fake own death (Fingir a propria morte)
-1x Give in to violence
-1x Skyship Plunderer
-1x Cazur, Ruthless Stalker
-1x Take the fall
-1x Ukkima, Stalking Shadow
-1x Ramirez DePietro, Pillager
-1x Abomination of Guldul
-1x Ghost of Ramirez DePietro
-1x Dream-Thief's bandana
-1x Disinformation Campaign
-1x Alora, Merry Thief
-1x Malcolm, Keen-Eyed Navigator
-1x Command tower
-1x Secret Passage
-1x Temple of Deceit
 1x Ash Barrens
 1x Polluted Mine
 1x Exotic Orchard

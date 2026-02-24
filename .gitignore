@@ -5,10 +5,9 @@ build/bin
 node_modules
 frontend/dist
 
-# App data (generated, not source of truth)
-data/cards.db
-data/images/cache/
-data/images/mpc/
-
-# Keep custom images directory tracked
-!data/images/custom/.gitkeep
+# App data (generated at build/runtime in %APPDATA%/mtg-db)
+# - config.json (collection paths)
+# - cards.db (SQLite cache)
+# - images/cache/ (Scryfall images)
+# - images/mpc/ (MPC Autofill images)
+# These are all rebuildable and should not be committed

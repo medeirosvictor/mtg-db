@@ -13,12 +13,26 @@ import (
 
 // Card represents a single card entry parsed from a deck file.
 type Card struct {
-	Quantity        int      `json:"quantity"`
-	Name            string   `json:"name"`
-	SetCode         string   `json:"setCode,omitempty"`
-	CollectorNumber string   `json:"collectorNumber,omitempty"`
-	Foil            bool     `json:"foil,omitempty"`
-	Tags            []string `json:"tags,omitempty"`
+	Quantity        int           `json:"quantity"`
+	Name            string        `json:"name"`
+	SetCode         string        `json:"setCode,omitempty"`
+	CollectorNumber string        `json:"collectorNumber,omitempty"`
+	Foil            bool          `json:"foil,omitempty"`
+	Tags            []string      `json:"tags,omitempty"`
+	Scryfall        *ScryfallData `json:"scryFall,omitempty"`
+}
+
+// ScryfallData holds additional card data from the Scryfall API
+type ScryfallData struct {
+	OracleText    string   `json:"oracleText,omitempty"`
+	TypeLine      string   `json:"typeLine,omitempty"`
+	ManaCost      string   `json:"manaCost,omitempty"`
+	CMC           float64  `json:"cmc,omitempty"`
+	ImageURI      string   `json:"imageUri,omitempty"`
+	PriceUSD      string   `json:"priceUsd,omitempty"`
+	PriceUSDFoil  string   `json:"priceUsdFoil,omitempty"`
+	ColorIdentity string   `json:"colorIdentity,omitempty"`
+	Tags          []string `json:"tags,omitempty"`
 }
 
 // Tag constants.
@@ -292,6 +306,63 @@ func SetCardTag(cards []Card, cardName string, tag string, enabled bool) []Card 
 		}
 	}
 	return cards
+}
+
+// AddCard adds a card to the deck. If card already exists, increments quantity.
+// Returns the updated list of cards.
+func AddCard(cards []Card, name string, quantity int) []Card {
+	if quantity <= 0 {
+		return cards
+	}
+
+	// Check if card already exists (case-insensitive)
+	for i := range cards {
+		if strings.EqualFold(cards[i].Name, name) {
+			cards[i].Quantity += quantity
+			return cards
+		}
+	}
+
+	// Card doesn't exist, add new
+	newCard := Card{
+		Quantity: quantity,
+		Name:     name,
+	}
+	return append(cards, newCard)
+}
+
+// RemoveCard removes a card from the deck by name (case-insensitive).
+// Returns the updated list of cards.
+func RemoveCard(cards []Card, name string) []Card {
+	var result []Card
+	for _, c := range cards {
+		if !strings.EqualFold(c.Name, name) {
+			result = append(result, c)
+		}
+	}
+	return result
+}
+
+// UpdateCardQty updates the quantity of a card. If quantity <= 0, removes the card.
+// Returns the updated list of cards.
+func UpdateCardQty(cards []Card, name string, quantity int) []Card {
+	if quantity <= 0 {
+		return RemoveCard(cards, name)
+	}
+
+	for i := range cards {
+		if strings.EqualFold(cards[i].Name, name) {
+			cards[i].Quantity = quantity
+			return cards
+		}
+	}
+
+	// Card doesn't exist, add new
+	newCard := Card{
+		Quantity: quantity,
+		Name:     name,
+	}
+	return append(cards, newCard)
 }
 
 // GetCommanders returns the names of cards tagged as commander in a deck.

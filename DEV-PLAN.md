@@ -31,22 +31,41 @@
 ## Current State of the Repo
 
 ```
-decks/
-  abzan-desert/      100 cards  ✅ Owned     (Hazezon — Abzan Lands)
-  avatar-ally/        102 cards  📋 Planned   (Tazri — 5C Allies)
-  desert-dune/         99 cards  ✅ Owned     (Yuma — Naya Landfall)
-  finalfantasy-voltron/133 cards 📋 Planned   (Cloud — Esper Voltron)
-  jumpscare/          100 cards  ✅ Owned     (Arixmethes — Simic Big)
-  lotr-aragorn/        99 cards  ✅ Owned     (Aragorn — 4C Humans)
-  sultai-rogues/      122 cards  📦 Disassembled (Ukkima — Sultai Rogues)
-  warhammer-spellslinger/106 cards ✅ Owned   (Lilah — Izzet Spells)
-wishlists/
-  master-purchase-list.txt       226 cards across planned decks
-history/
-  previous-order.txt
-scripts/
-  find-overlaps.sh               Bash — finds shared cards across decks
-  validate-decks.sh              Bash — checks deck sizes
+mtg-db/                              ← App repo (code only)
+  main.go
+  app.go
+  go.mod, go.sum
+  wails.json
+  internal/
+    config/                          ← Config (reads %APPDATA%/mtg-db/config.json)
+    deck/                            ← Deck parser
+  frontend/
+    src/
+      App.svelte
+      lib/
+      views/
+      components/
+  build/
+  README.md
+  DEV-PLAN.md
+
+~/mtg-collection/                    ← Your collection (separate from app repo)
+  decks/
+    abzan-desert/      100 cards  ✅ Owned     (Hazezon — Abzan Lands)
+    avatar-ally/        102 cards  📋 Planned   (Tazri — 5C Allies)
+    desert-dune/         99 cards  ✅ Owned     (Yuma — Naya Landfall)
+    finalfantasy-voltron/133 cards 📋 Planned   (Cloud — Esper Voltron)
+    jumpscare/          100 cards  ✅ Owned     (Arixmethes — Simic Big)
+    lotr-aragorn/        99 cards  ✅ Owned     (Aragorn — 4C Humans)
+    sultai-rogues/      122 cards  📦 Disassembled (Ukkima — Sultai Rogues)
+    warhammer-spellslinger/106 cards ✅ Owned   (Lilah — Izzet Spells)
+  wishlists/
+    master-purchase-list.txt       226 cards across planned decks
+  history/
+    previous-order.txt
+  scripts/
+    find-overlaps.sh               Bash — finds shared cards across decks
+    validate-decks.sh              Bash — checks deck sizes
 ```
 
 **Card format** (varies slightly between decks — parser must handle all):
@@ -97,7 +116,7 @@ scripts/
 
 ---
 
-## Phase 0.5 — Collection Folder Separation (~3-4 hours)
+## Phase 0.5 — Collection Folder Separation ✅
 
 **Goal:** Decouple the app from the card data. The app is a standalone binary that points at any collection folder on disk. Your decks, wishlists, and history are **not** part of the app repo.
 
@@ -168,25 +187,25 @@ This keeps the collection folder **pristine** — just plain text files and mark
 
 ### Tasks
 
-- [ ] **Config rewrite:** `internal/config/config.go` reads/writes `%APPDATA%/mtg-db/config.json`
+- [x] **Config rewrite:** `internal/config/config.go` reads/writes `%APPDATA%/mtg-db/config.json`
   - Replace `RootDir` with OS app data path for cache/db
   - Collection path comes from config, not from `findRootDir()` heuristic
-- [ ] **First launch flow:** No config → Wails native folder picker dialog → "Select your collection folder"
+- [x] **First launch flow:** No config → Wails native folder picker dialog → "Select your collection folder"
   - Validate selected folder (must have `decks/` with at least one deck)
   - If invalid, show friendly error: "This folder doesn't look like an MTG collection. Expected a `decks/` subfolder."
   - Option to "Initialize a new collection here" (creates `decks/` skeleton)
-- [ ] **Collection switcher:** dropdown in the app header
+- [x] **Collection switcher:** dropdown in the app header
   - Shows all known collections by label
   - "Open another folder…" option opens the folder picker
   - Switching reloads all decks instantly
   - Labels auto-derived from folder name, editable
-- [ ] **Remove collection data from app repo:**
-  - Move `decks/`, `wishlists/`, `history/`, `scripts/` out of this repo
-  - Remove `data/` directory (now lives in `%APPDATA%`)
-  - Update `.gitignore`
+- [x] **Remove collection data from app repo:**
+  - Moved `decks/`, `wishlists/`, `history/`, `scripts/` to `~/mtg-collection`
+  - Removed `data/` directory (now lives in `%APPDATA%`)
+  - Updated `.gitignore`
   - App repo becomes pure code: `main.go`, `app.go`, `internal/`, `frontend/`, `build/`, `wails.json`
-- [ ] **Update `app.go`:** remove `findRootDir()`, replace with config-based path lookup
-- [ ] **Broken path handling:** if saved collection path no longer exists on launch → show picker with error message
+- [x] **Update `app.go`:** remove `findRootDir()`, replace with config-based path lookup
+- [x] **Broken path handling:** if saved collection path no longer exists on launch → show picker with error message
 
 ### Final Repo Structure
 
@@ -289,22 +308,22 @@ mtg-db/                              ← App repo (code only)
 > Add-card UX improves once 1A lands (autocomplete, validation), but works standalone.
 
 #### Add / Remove Cards (~4-6 hrs)
-- [ ] Go backend: `AddCard(slug, name, qty)` — appends `{qty}x {name}` to `deck.txt`, or bumps qty if card already exists
-- [ ] Go backend: `RemoveCard(slug, name)` — removes the card line from `deck.txt`
-- [ ] Frontend: text input (or search box) to add a card by name
-- [ ] Frontend: "Remove from deck" in card row context menu
-- [ ] Handle duplicates: if card already in deck, increment quantity instead of adding a new line
+- [x] Go backend: `AddCard(slug, name, qty)` — appends `{qty}x {name}` to `deck.txt`, or bumps qty if card already exists
+- [x] Go backend: `RemoveCard(slug, name)` — removes the card line from `deck.txt`
+- [x] Frontend: text input (or search box) to add a card by name
+- [x] Frontend: "Remove from deck" in card row context menu
+- [x] Handle duplicates: if card already in deck, increment quantity instead of adding a new line
 
 #### Quantity Adjust (~2-3 hrs)
-- [ ] Go backend: `UpdateCardQty(slug, cardName, newQty)` — updates quantity in `deck.txt`; removes card if qty reaches 0
-- [ ] Frontend: `+` / `−` buttons on each card row (visible on hover or always visible)
-- [ ] Debounced writes — don't thrash disk on rapid clicks
-- [ ] Especially useful for lands (quickly set "7x Forest")
+- [x] Go backend: `UpdateCardQty(slug, cardName, newQty)` — updates quantity in `deck.txt`; removes card if qty reaches 0
+- [x] Frontend: `+` / `−` buttons on each card row (visible on hover or always visible)
+- [x] Debounced writes — don't thrash disk on rapid clicks
+- [x] Especially useful for lands (quickly set "7x Forest")
 
 #### Edit Deck Name & Description (~2-3 hrs)
-- [ ] Go backend: `UpdateDeckInfo(slug, title, strategy)` — writes updated `info.md` via existing `WriteInfoFile()`
-- [ ] Frontend: click-to-edit on deck title and strategy in the deck header
-- [ ] Slug (folder name) stays unchanged — only display title in `info.md` changes
+- [x] Go backend: `UpdateDeckInfo(slug, title, strategy)` — writes updated `info.md` via existing `WriteInfoFile()`
+- [x] Frontend: click-to-edit on deck title and strategy in the deck header
+- [x] Slug (folder name) stays unchanged — only display title in `info.md` changes
 - [ ] Optional: edit other info.md fields (status, colors, universe) via a settings/edit modal
 
 ---

@@ -1,5 +1,33 @@
 export namespace deck {
 	
+	export class ScryfallData {
+	    oracleText?: string;
+	    typeLine?: string;
+	    manaCost?: string;
+	    cmc?: number;
+	    imageUri?: string;
+	    priceUsd?: string;
+	    priceUsdFoil?: string;
+	    colorIdentity?: string;
+	    tags?: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new ScryfallData(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.oracleText = source["oracleText"];
+	        this.typeLine = source["typeLine"];
+	        this.manaCost = source["manaCost"];
+	        this.cmc = source["cmc"];
+	        this.imageUri = source["imageUri"];
+	        this.priceUsd = source["priceUsd"];
+	        this.priceUsdFoil = source["priceUsdFoil"];
+	        this.colorIdentity = source["colorIdentity"];
+	        this.tags = source["tags"];
+	    }
+	}
 	export class Card {
 	    quantity: number;
 	    name: string;
@@ -7,6 +35,7 @@ export namespace deck {
 	    collectorNumber?: string;
 	    foil?: boolean;
 	    tags?: string[];
+	    scryFall?: ScryfallData;
 	
 	    static createFrom(source: any = {}) {
 	        return new Card(source);
@@ -20,7 +49,26 @@ export namespace deck {
 	        this.collectorNumber = source["collectorNumber"];
 	        this.foil = source["foil"];
 	        this.tags = source["tags"];
+	        this.scryFall = this.convertValues(source["scryFall"], ScryfallData);
 	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 	export class DeckInfo {
 	    title: string;
@@ -82,10 +130,72 @@ export namespace deck {
 		    return a;
 		}
 	}
+	
 
 }
 
 export namespace main {
+	
+	export class CollectionInfo {
+	    path: string;
+	    label: string;
+	    lastOpened: string;
+	    isActive: boolean;
+	    isValid: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new CollectionInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.path = source["path"];
+	        this.label = source["label"];
+	        this.lastOpened = source["lastOpened"];
+	        this.isActive = source["isActive"];
+	        this.isValid = source["isValid"];
+	    }
+	}
+	export class AppState {
+	    hasCollection: boolean;
+	    collectionPath: string;
+	    collectionLabel: string;
+	    collectionValid: boolean;
+	    collections: CollectionInfo[];
+	    needsSetup: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new AppState(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.hasCollection = source["hasCollection"];
+	        this.collectionPath = source["collectionPath"];
+	        this.collectionLabel = source["collectionLabel"];
+	        this.collectionValid = source["collectionValid"];
+	        this.collections = this.convertValues(source["collections"], CollectionInfo);
+	        this.needsSetup = source["needsSetup"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	
 	export class DeckSummary {
 	    slug: string;
