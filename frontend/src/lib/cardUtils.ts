@@ -1,7 +1,7 @@
 import type { Card } from './types';
 
-// Basic land names
-const BASIC_LANDS = ['plains', 'island', 'swamp', 'mountain', 'forest'];
+// Basic land names (including Wastes from Future Sight)
+const BASIC_LANDS = ['plains', 'island', 'swamp', 'mountain', 'forest', 'wastes'];
 
 /**
  * Fuzzy match text against a query.

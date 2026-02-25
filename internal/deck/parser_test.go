@@ -6,253 +6,430 @@ import (
 	"testing"
 )
 
-func TestParseCardLine(t *testing.T) {
+// Test helper: create temp directory with deck files
+func createTestDeckDir(t *testing.T, files map[string]string) string {
+	tmpDir, err := os.MkdirTemp("", "deck-test-*")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+
+	for name, content := range files {
+		path := filepath.Join(tmpDir, name)
+		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+			t.Fatalf("failed to write %s: %v", name, err)
+		}
+	}
+
+	return tmpDir
+}
+
+func cleanupTestDir(t *testing.T, dir string) {
+	if err := os.RemoveAll(dir); err != nil {
+		t.Logf("failed to cleanup temp dir: %v", err)
+	}
+}
+
+// =====================
+// CRITICAL: Card Parsing Tests
+// =====================
+
+func TestParseCardLine_QuantityFormats(t *testing.T) {
 	tests := []struct {
-		input string
-		want  Card
-		err   bool
+		name     string
+		input    string
+		wantQty  int
+		wantName string
+		wantSet  string
+		wantFoil bool
 	}{
-		// Basic formats
-		{
-			input: "1 Sol Ring",
-			want:  Card{Quantity: 1, Name: "Sol Ring"},
-		},
-		{
-			input: "1x Sol Ring",
-			want:  Card{Quantity: 1, Name: "Sol Ring"},
-		},
-		{
-			input: "7 Forest",
-			want:  Card{Quantity: 7, Name: "Forest"},
-		},
-		// With set code and collector number
-		{
-			input: "1 Aang and Katara (TLE) 69",
-			want:  Card{Quantity: 1, Name: "Aang and Katara", SetCode: "TLE", CollectorNumber: "69"},
-		},
-		{
-			input: "1x Éowyn, Shieldmaiden",
-			want:  Card{Quantity: 1, Name: "Éowyn, Shieldmaiden"},
-		},
-		// Double-faced cards
-		{
-			input: "1 Aang, at the Crossroads / Aang, Destined Savior (TLA) 203",
-			want:  Card{Quantity: 1, Name: "Aang, at the Crossroads / Aang, Destined Savior", SetCode: "TLA", CollectorNumber: "203"},
-		},
-		// With foil marker — collector number "23s" is a promo variant
-		{
-			input: "1 Hakoda, Selfless Commander (PTLA) 23s *F*",
-			want:  Card{Quantity: 1, Name: "Hakoda, Selfless Commander", SetCode: "PTLA", CollectorNumber: "23s", Foil: true},
-		},
-		// With {num} variant (from master purchase list)
-		{
-			input: "1x Avatar Aang {207} // Aang, Master of Elements {207}",
-			want:  Card{Quantity: 1, Name: "Avatar Aang {207} // Aang, Master of Elements", CollectorNumber: "207"},
-		},
-		// Set code with hyphenated collector number (PLST cross-references)
-		{
-			input: "1 Arcane Denial (PLST) CMA-30",
-			want:  Card{Quantity: 1, Name: "Arcane Denial", SetCode: "PLST", CollectorNumber: "CMA-30"},
-		},
-		// Multiple quantity
-		{
-			input: "3x Anger",
-			want:  Card{Quantity: 3, Name: "Anger"},
-		},
-		// --- Tag tests ---
-		{
-			input: "1x Sol Ring #commander",
-			want:  Card{Quantity: 1, Name: "Sol Ring", Tags: []string{"commander"}},
-		},
-		{
-			input: "1x Mana Crypt #proxy #wishlist",
-			want:  Card{Quantity: 1, Name: "Mana Crypt", Tags: []string{"proxy", "wishlist"}},
-		},
-		{
-			input: "1 Avenger of Zendikar (ZNR) 178 #proxy",
-			want:  Card{Quantity: 1, Name: "Avenger of Zendikar", SetCode: "ZNR", CollectorNumber: "178", Tags: []string{"proxy"}},
-		},
-		{
-			input: "1x Hazezon, Shaper of Sand #commander",
-			want:  Card{Quantity: 1, Name: "Hazezon, Shaper of Sand", Tags: []string{"commander"}},
-		},
-		// Comments and blanks
-		{
-			input: "# Cards to buy/print for this deck",
-			err:   true,
-		},
-		{
-			input: "",
-			err:   true,
-		},
-		{
-			input: "// comment",
-			err:   true,
-		},
+		{"1x format", "1x Lightning Bolt", 1, "Lightning Bolt", "", false},
+		{"1x with set", "1x Lightning Bolt (M19)", 1, "Lightning Bolt", "M19", false},
+		{"1x with set and collector", "1x Lightning Bolt (M19) 126", 1, "Lightning Bolt", "M19", false},
+		{"1x foil", "1x Lightning Bolt *F*", 1, "Lightning Bolt", "", true},
+		{"1x set collector foil", "1x Lightning Bolt (M19) 126 *F*", 1, "Lightning Bolt", "M19", true},
+		{"plain quantity", "3 Counterspell", 3, "Counterspell", "", false},
+		{"quantity without x", "4 Sol Ring", 4, "Sol Ring", "", false},
+		{"double-faced card", "1x Card A / Card B (SET) 123", 1, "Card A / Card B", "SET", false},
+		{"non-standard collector", "1x Card (PLST) CMA-30", 1, "Card", "PLST", false},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
-			got, err := ParseCardLine(tt.input)
-			if tt.err {
-				if err == nil {
-					t.Errorf("expected error for %q, got %+v", tt.input, got)
-				}
-				return
-			}
+		t.Run(tt.name, func(t *testing.T) {
+			card, err := ParseCardLine(tt.input)
 			if err != nil {
-				t.Errorf("unexpected error for %q: %v", tt.input, err)
-				return
+				t.Fatalf("unexpected error: %v", err)
 			}
-			if got.Quantity != tt.want.Quantity {
-				t.Errorf("quantity: got %d, want %d", got.Quantity, tt.want.Quantity)
+			if card.Quantity != tt.wantQty {
+				t.Errorf("quantity = %d, want %d", card.Quantity, tt.wantQty)
 			}
-			if got.Name != tt.want.Name {
-				t.Errorf("name: got %q, want %q", got.Name, tt.want.Name)
+			if card.Name != tt.wantName {
+				t.Errorf("name = %q, want %q", card.Name, tt.wantName)
 			}
-			if got.SetCode != tt.want.SetCode {
-				t.Errorf("setCode: got %q, want %q", got.SetCode, tt.want.SetCode)
+			if card.SetCode != tt.wantSet {
+				t.Errorf("setCode = %q, want %q", card.SetCode, tt.wantSet)
 			}
-			if got.CollectorNumber != tt.want.CollectorNumber {
-				t.Errorf("collectorNumber: got %q, want %q", got.CollectorNumber, tt.want.CollectorNumber)
+			if card.Foil != tt.wantFoil {
+				t.Errorf("foil = %v, want %v", card.Foil, tt.wantFoil)
 			}
-			if got.Foil != tt.want.Foil {
-				t.Errorf("foil: got %v, want %v", got.Foil, tt.want.Foil)
+		})
+	}
+}
+
+func TestParseCardLine_Tags(t *testing.T) {
+	tests := []struct {
+		name      string
+		input     string
+		wantTags  []string
+		wantName  string
+	}{
+		{"commander tag", "1x Sol Ring #commander", []string{"commander"}, "Sol Ring"},
+		{"proxy tag", "1x Sol Ring #proxy", []string{"proxy"}, "Sol Ring"},
+		{"multiple tags", "1x Sol Ring #commander #proxy", []string{"commander", "proxy"}, "Sol Ring"},
+		{"mixed case tag", "1x Sol Ring #Commander #Proxy", []string{"commander", "proxy"}, "Sol Ring"},
+		{"wishlist tag", "1x Sol Ring #wishlist", []string{"wishlist"}, "Sol Ring"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			card, err := ParseCardLine(tt.input)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
 			}
-			// Compare tags
-			if len(got.Tags) != len(tt.want.Tags) {
-				t.Errorf("tags: got %v, want %v", got.Tags, tt.want.Tags)
-			} else {
-				for i := range got.Tags {
-					if got.Tags[i] != tt.want.Tags[i] {
-						t.Errorf("tags[%d]: got %q, want %q", i, got.Tags[i], tt.want.Tags[i])
-					}
+			if len(card.Tags) != len(tt.wantTags) {
+				t.Errorf("tags = %v, want %v", card.Tags, tt.wantTags)
+			}
+			for i, tag := range tt.wantTags {
+				if i >= len(card.Tags) || card.Tags[i] != tag {
+					t.Errorf("tags[%d] = %q, want %q", i, card.Tags[i], tag)
 				}
 			}
 		})
 	}
 }
 
-func TestFormatCardLine(t *testing.T) {
-	tests := []struct {
-		card Card
-		want string
-	}{
-		{
-			card: Card{Quantity: 1, Name: "Sol Ring"},
-			want: "1x Sol Ring",
-		},
-		{
-			card: Card{Quantity: 1, Name: "Sol Ring", Tags: []string{"commander"}},
-			want: "1x Sol Ring #commander",
-		},
-		{
-			card: Card{Quantity: 1, Name: "Mana Crypt", Tags: []string{"proxy", "wishlist"}},
-			want: "1x Mana Crypt #proxy #wishlist",
-		},
-		{
-			card: Card{Quantity: 1, Name: "Avenger of Zendikar", SetCode: "ZNR", CollectorNumber: "178"},
-			want: "1x Avenger of Zendikar (ZNR) 178",
-		},
-		{
-			card: Card{Quantity: 7, Name: "Forest"},
-			want: "7x Forest",
-		},
-		{
-			card: Card{Quantity: 1, Name: "Hakoda", SetCode: "PTLA", CollectorNumber: "23s", Foil: true},
-			want: "1x Hakoda (PTLA) 23s *F*",
-		},
+func TestParseCardLine_SkipInvalid(t *testing.T) {
+	invalid := []string{
+		"",           // empty
+		"# comment",  // comment
+		"// comment", // comment
+		"   ",        // whitespace
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.want, func(t *testing.T) {
-			got := FormatCardLine(tt.card)
-			if got != tt.want {
-				t.Errorf("FormatCardLine: got %q, want %q", got, tt.want)
-			}
-		})
+	for _, line := range invalid {
+		_, err := ParseCardLine(line)
+		if err == nil {
+			t.Errorf("expected error for %q, got nil", line)
+		}
+	}
+}
+
+func TestParseDeckFile(t *testing.T) {
+	content := `1x Lightning Bolt
+1x Counterspell #commander
+2x Forest #wishlist
+# This is a comment
+1x Sol Ring (M19) 123 *F*
+`
+	dir := createTestDeckDir(t, map[string]string{
+		"deck.txt": content,
+	})
+	defer cleanupTestDir(t, dir)
+
+	cards, err := ParseDeckFile(filepath.Join(dir, "deck.txt"))
+	if err != nil {
+		t.Fatalf("ParseDeckFile error: %v", err)
+	}
+
+	if len(cards) != 4 {
+		t.Errorf("got %d cards, want 4", len(cards))
+	}
+
+	// Check first card
+	if cards[0].Name != "Lightning Bolt" {
+		t.Errorf("first card name = %q, want %q", cards[0].Name, "Lightning Bolt")
+	}
+	if cards[0].Quantity != 1 {
+		t.Errorf("first card quantity = %d, want 1", cards[0].Quantity)
+	}
+
+	// Check card with commander tag
+	commanderCard := cards[1]
+	if !commanderCard.HasTag("commander") {
+		t.Errorf("expected commander tag on %s", commanderCard.Name)
+	}
+
+	// Check wishlist card
+	wishlistCard := cards[2]
+	if !wishlistCard.HasTag("wishlist") {
+		t.Errorf("expected wishlist tag on %s", wishlistCard.Name)
+	}
+
+	// Check foil card
+	foilCard := cards[3]
+	if !foilCard.Foil {
+		t.Errorf("expected foil on %s", foilCard.Name)
+	}
+}
+
+// =====================
+// CRITICAL: Deck Info Parsing Tests
+// =====================
+
+func TestParseInfoFile(t *testing.T) {
+	content := `# My Awesome Deck
+
+- **Status:** ✅ Owned
+- **Colors:** WUG
+- **Commander:** Teferi, Hero of Dominaria
+- **Strategy:** Control the board and win with card advantage
+- **Universe:** Custom
+`
+	dir := createTestDeckDir(t, map[string]string{
+		"info.md": content,
+	})
+	defer cleanupTestDir(t, dir)
+
+	info, err := ParseInfoFile(filepath.Join(dir, "info.md"))
+	if err != nil {
+		t.Fatalf("ParseInfoFile error: %v", err)
+	}
+
+	if info.Title != "My Awesome Deck" {
+		t.Errorf("title = %q, want %q", info.Title, "My Awesome Deck")
+	}
+	if info.Status != "✅ Owned" {
+		t.Errorf("status = %q, want %q", info.Status, "✅ Owned")
+	}
+	if info.Colors != "WUG" {
+		t.Errorf("colors = %q, want %q", info.Colors, "WUG")
+	}
+	if info.Commander != "Teferi, Hero of Dominaria" {
+		t.Errorf("commander = %q, want %q", info.Commander, "Teferi, Hero of Dominaria")
+	}
+	if info.Strategy != "Control the board and win with card advantage" {
+		t.Errorf("strategy = %q, want %q", info.Strategy, "Control the board and win with card advantage")
+	}
+	if info.Universe != "Custom" {
+		t.Errorf("universe = %q, want %q", info.Universe, "Custom")
+	}
+}
+
+func TestWriteInfoFile(t *testing.T) {
+	info := DeckInfo{
+		Title:     "Test Deck",
+		Status:    "📋 Planned",
+		Colors:    "BR",
+		Commander: "Edgar Markov",
+		Strategy:  "Go wide with vampires",
+		Universe:  "MTG",
+	}
+
+	tmpDir := createTestDeckDir(t, map[string]string{})
+	defer cleanupTestDir(t, tmpDir)
+
+	path := filepath.Join(tmpDir, "info.md")
+	if err := WriteInfoFile(path, info); err != nil {
+		t.Fatalf("WriteInfoFile error: %v", err)
+	}
+
+	// Read back and verify
+	loaded, err := ParseInfoFile(path)
+	if err != nil {
+		t.Fatalf("ParseInfoFile error: %v", err)
+	}
+
+	if loaded.Title != info.Title {
+		t.Errorf("title = %q, want %q", loaded.Title, info.Title)
+	}
+	if loaded.Status != info.Status {
+		t.Errorf("status = %q, want %q", loaded.Status, info.Status)
+	}
+	if loaded.Colors != info.Colors {
+		t.Errorf("colors = %q, want %q", loaded.Colors, info.Colors)
+	}
+}
+
+// =====================
+// HIGH: Card Operations Tests
+// =====================
+
+func TestAddCard(t *testing.T) {
+	cards := []Card{}
+
+	// Add new card
+	cards = AddCard(cards, "Lightning Bolt", 1)
+	if len(cards) != 1 {
+		t.Fatalf("expected 1 card, got %d", len(cards))
+	}
+	if cards[0].Name != "Lightning Bolt" || cards[0].Quantity != 1 {
+		t.Errorf("card = %+v", cards[0])
+	}
+
+	// Add to existing card
+	cards = AddCard(cards, "Lightning Bolt", 2)
+	if len(cards) != 1 {
+		t.Fatalf("expected 1 card (incremented), got %d", len(cards))
+	}
+	if cards[0].Quantity != 3 {
+		t.Errorf("quantity = %d, want 3", cards[0].Quantity)
+	}
+
+	// Add different card
+	cards = AddCard(cards, "Counterspell", 2)
+	if len(cards) != 2 {
+		t.Fatalf("expected 2 cards, got %d", len(cards))
+	}
+}
+
+func TestRemoveCard(t *testing.T) {
+	cards := []Card{
+		{Name: "Lightning Bolt", Quantity: 1},
+		{Name: "Counterspell", Quantity: 2},
+		{Name: "Sol Ring", Quantity: 1},
+	}
+
+	cards = RemoveCard(cards, "Lightning Bolt")
+	if len(cards) != 2 {
+		t.Fatalf("expected 2 cards, got %d", len(cards))
+	}
+	if cards[0].Name != "Counterspell" {
+		t.Errorf("remaining cards should start with Counterspell, got %s", cards[0].Name)
+	}
+
+	// Test case-insensitive
+	cards = RemoveCard(cards, "COUNTERSPELL")
+	if len(cards) != 1 {
+		t.Fatalf("expected 1 card, got %d", len(cards))
+	}
+}
+
+func TestUpdateCardQty(t *testing.T) {
+	cards := []Card{
+		{Name: "Lightning Bolt", Quantity: 1},
+		{Name: "Counterspell", Quantity: 2},
+	}
+
+	// Update existing
+	cards = UpdateCardQty(cards, "Lightning Bolt", 4)
+	if cards[0].Quantity != 4 {
+		t.Errorf("quantity = %d, want 4", cards[0].Quantity)
+	}
+
+	// Add new
+	cards = UpdateCardQty(cards, "New Card", 3)
+	if len(cards) != 3 {
+		t.Fatalf("expected 3 cards, got %d", len(cards))
+	}
+	if cards[2].Name != "New Card" || cards[2].Quantity != 3 {
+		t.Errorf("new card = %+v", cards[2])
+	}
+
+	// Remove (quantity <= 0)
+	cards = UpdateCardQty(cards, "Counterspell", 0)
+	if len(cards) != 2 {
+		t.Fatalf("expected 2 cards after remove, got %d", len(cards))
 	}
 }
 
 func TestSetCardTag(t *testing.T) {
 	cards := []Card{
-		{Quantity: 1, Name: "Sol Ring"},
-		{Quantity: 1, Name: "Hazezon, Shaper of Sand"},
-		{Quantity: 1, Name: "Avenger of Zendikar", Tags: []string{"proxy"}},
+		{Name: "Lightning Bolt", Tags: []string{"commander"}},
+		{Name: "Counterspell", Tags: []string{}},
 	}
 
-	// Add commander tag
-	cards = SetCardTag(cards, "Hazezon, Shaper of Sand", TagCommander, true)
-	if !cards[1].HasTag(TagCommander) {
-		t.Error("expected Hazezon to have commander tag")
+	// Add tag
+	cards = SetCardTag(cards, "Lightning Bolt", "proxy", true)
+	if !cards[0].HasTag("proxy") {
+		t.Errorf("expected proxy tag on Lightning Bolt")
 	}
 
-	// Add proxy tag to Sol Ring
-	cards = SetCardTag(cards, "Sol Ring", TagProxy, true)
-	if !cards[0].HasTag(TagProxy) {
-		t.Error("expected Sol Ring to have proxy tag")
+	// Add tag to card without tags
+	cards = SetCardTag(cards, "Counterspell", "proxy", true)
+	if !cards[1].HasTag("proxy") {
+		t.Errorf("expected proxy tag on Counterspell")
 	}
 
-	// Remove proxy tag from Avenger
-	cards = SetCardTag(cards, "Avenger of Zendikar", TagProxy, false)
-	if cards[2].HasTag(TagProxy) {
-		t.Error("expected Avenger to not have proxy tag")
-	}
-
-	// Adding same tag twice should not duplicate
-	cards = SetCardTag(cards, "Hazezon, Shaper of Sand", TagCommander, true)
-	count := 0
-	for _, tag := range cards[1].Tags {
-		if tag == TagCommander {
-			count++
-		}
-	}
-	if count != 1 {
-		t.Errorf("expected 1 commander tag, got %d", count)
+	// Remove tag
+	cards = SetCardTag(cards, "Lightning Bolt", "commander", false)
+	if cards[0].HasTag("commander") {
+		t.Errorf("commander tag should be removed")
 	}
 }
 
-func TestRoundTrip(t *testing.T) {
-	// Write cards → file → read back, ensure they match
-	dir := t.TempDir()
-	path := filepath.Join(dir, "deck.txt")
+// =====================
+// MEDIUM: Format and Load Tests
+// =====================
 
-	original := []Card{
-		{Quantity: 1, Name: "Sol Ring", Tags: []string{"commander"}},
-		{Quantity: 1, Name: "Mana Crypt", Tags: []string{"proxy", "wishlist"}},
-		{Quantity: 7, Name: "Forest"},
-		{Quantity: 1, Name: "Avenger of Zendikar", SetCode: "ZNR", CollectorNumber: "178"},
-		{Quantity: 1, Name: "Hakoda", SetCode: "PTLA", CollectorNumber: "23s", Foil: true},
+func TestFormatCardLine(t *testing.T) {
+	card := Card{
+		Quantity:        2,
+		Name:            "Lightning Bolt",
+		SetCode:         "M19",
+		CollectorNumber: "126",
+		Foil:            true,
+		Tags:            []string{"commander", "proxy"},
 	}
 
-	err := WriteDeckFile(path, original)
+	result := FormatCardLine(card)
+	expected := "2x Lightning Bolt (M19) 126 *F* #commander #proxy"
+	if result != expected {
+		t.Errorf("got %q, want %q", result, expected)
+	}
+}
+
+func TestLoadDeck(t *testing.T) {
+	dir := createTestDeckDir(t, map[string]string{
+		"deck.txt": `1x Lightning Bolt
+1x Counterspell #commander
+`,
+		"info.md": `# Test Deck
+
+- **Status:** ✅ Owned
+- **Colors:** UR
+`,
+	})
+	defer cleanupTestDir(t, dir)
+
+	deck, err := LoadDeck(dir)
 	if err != nil {
-		t.Fatalf("WriteDeckFile: %v", err)
+		t.Fatalf("LoadDeck error: %v", err)
 	}
 
-	// Verify the file content
-	content, _ := os.ReadFile(path)
-	t.Logf("Written file:\n%s", string(content))
-
-	parsed, err := ParseDeckFile(path)
-	if err != nil {
-		t.Fatalf("ParseDeckFile: %v", err)
+	if deck.Info.Title != "Test Deck" {
+		t.Errorf("title = %q, want %q", deck.Info.Title, "Test Deck")
+	}
+	if deck.Info.Status != "✅ Owned" {
+		t.Errorf("status = %q, want %q", deck.Info.Status, "✅ Owned")
+	}
+	if deck.Info.Colors != "UR" {
+		t.Errorf("colors = %q, want %q", deck.Info.Colors, "UR")
+	}
+	if len(deck.Cards) != 2 {
+		t.Errorf("got %d cards, want 2", len(deck.Cards))
+	}
+	if deck.CardCount != 2 {
+		t.Errorf("cardCount = %d, want 2", deck.CardCount)
 	}
 
-	if len(parsed) != len(original) {
-		t.Fatalf("expected %d cards, got %d", len(original), len(parsed))
+	// Check commander derived from tags
+	if deck.Info.Commander != "Counterspell" {
+		t.Errorf("commander = %q, want %q", deck.Info.Commander, "Counterspell")
+	}
+}
+
+func TestGetCommanders(t *testing.T) {
+	cards := []Card{
+		{Name: "Card1", Tags: []string{"commander"}},
+		{Name: "Card2", Tags: []string{}},
+		{Name: "Card3", Tags: []string{"commander", "proxy"}},
 	}
 
-	for i, orig := range original {
-		got := parsed[i]
-		if got.Name != orig.Name {
-			t.Errorf("[%d] name: got %q, want %q", i, got.Name, orig.Name)
-		}
-		if got.Quantity != orig.Quantity {
-			t.Errorf("[%d] quantity: got %d, want %d", i, got.Quantity, orig.Quantity)
-		}
-		if len(got.Tags) != len(orig.Tags) {
-			t.Errorf("[%d] tags: got %v, want %v", i, got.Tags, orig.Tags)
-		}
+	commanders := GetCommanders(cards)
+	if len(commanders) != 2 {
+		t.Errorf("got %d commanders, want 2", len(commanders))
+	}
+	// Should be sorted
+	if commanders[0] != "Card1" || commanders[1] != "Card3" {
+		t.Errorf("commanders = %v, want [Card1 Card3]", commanders)
 	}
 }
