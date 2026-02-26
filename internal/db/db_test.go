@@ -16,11 +16,8 @@ func setupTestDB(t *testing.T) string {
 	if err != nil {
 		t.Fatalf("failed to create temp dir: %v", err)
 	}
-	// Reset the global db to nil before each test
-	if db != nil {
-		db.Close()
-		db = nil
-	}
+	// Use the new Reset function for clean state
+	Reset()
 	if err := Init(tmpDir); err != nil {
 		os.RemoveAll(tmpDir)
 		t.Fatalf("Init failed: %v", err)
@@ -30,7 +27,7 @@ func setupTestDB(t *testing.T) string {
 
 func cleanupTestDB(t *testing.T, dir string) {
 	t.Helper()
-	Close()
+	Reset()
 	os.RemoveAll(dir)
 }
 
@@ -135,7 +132,7 @@ func TestInit_DFCMigrationIdempotent(t *testing.T) {
 	defer cleanupTestDB(t, dir)
 
 	// Running migration again should not fail
-	if err := migrateAddDFCColumns(); err != nil {
+	if err := migrateAddDFCColumnsLocked(); err != nil {
 		t.Fatalf("second migration call failed: %v", err)
 	}
 
@@ -623,6 +620,9 @@ func TestClose_AndReInit(t *testing.T) {
 		t.Fatalf("Close failed: %v", err)
 	}
 
+	// Reset to allow re-init (Close doesn't reset the variable)
+	Reset()
+
 	// Re-init on the same directory
 	if err := Init(dir); err != nil {
 		t.Fatalf("Re-Init failed: %v", err)
@@ -664,19 +664,31 @@ func TestJoinStrings(t *testing.T) {
 
 func TestMapToJSON(t *testing.T) {
 	// nil map
-	if got := mapToJSON(nil); got != "{}" {
-		t.Errorf("mapToJSON(nil) = %q, want {}", got)
+	if got := MapToJSON(nil); got != "{}" {
+		t.Errorf("MapToJSON(nil) = %q, want {}", got)
 	}
 
 	// empty map
-	if got := mapToJSON(map[string]string{}); got != "{}" {
-		t.Errorf("mapToJSON({}) = %q, want {}", got)
+	if got := MapToJSON(map[string]string{}); got != "{}" {
+		t.Errorf("MapToJSON({}) = %q, want {}", got)
 	}
 
 	// single entry
-	got := mapToJSON(map[string]string{"commander": "legal"})
+	got := MapToJSON(map[string]string{"commander": "legal"})
 	if got != `{"commander":"legal"}` {
-		t.Errorf("mapToJSON = %q", got)
+		t.Errorf("MapToJSON = %q", got)
+	}
+
+	// Test with special characters (the fix!)
+	got = MapToJSON(map[string]string{"test": "quote\"here"})
+	if got != `{"test":"quote\"here"}` {
+		t.Errorf("MapToJSON with escaped quote = %q", got)
+	}
+
+	// Test with backslash
+	got = MapToJSON(map[string]string{"path": "C:\\Users\\test"})
+	if got != `{"path":"C:\\Users\\test"}` {
+		t.Errorf("MapToJSON with backslash = %q", got)
 	}
 }
 

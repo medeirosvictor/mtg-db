@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"app/internal/scryfall"
@@ -12,7 +13,48 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var db *sql.DB
+// DB Interface allows for dependency injection and mocking
+type DB interface {
+	Exec(query string, args ...interface{}) (sql.Result, error)
+	Query(query string, args ...interface{}) (*sql.Rows, error)
+	QueryRow(query string, args ...interface{}) *sql.Row
+	Close() error
+}
+
+// database wraps sql.DB with a mutex for thread safety
+type database struct {
+	*sql.DB
+	mu sync.RWMutex
+}
+
+// Global database instance - protected by mutex for thread safety
+var (
+	db   *database
+	dbMu sync.RWMutex
+)
+
+// SetDB allows injecting a custom DB implementation (useful for testing)
+func SetDB(custom DB) {
+	dbMu.Lock()
+	defer dbMu.Unlock()
+	if custom == nil {
+		return
+	}
+	// If it's already a *database, use it directly
+	if d, ok := custom.(*database); ok {
+		db = d
+		return
+	}
+	// Wrap other implementations
+	db = &database{DB: custom.(*sql.DB)}
+}
+
+// GetDB returns the current database instance (thread-safe)
+func GetDB() *database {
+	dbMu.RLock()
+	defer dbMu.RUnlock()
+	return db
+}
 
 // CachedCard represents a card in our local cache
 type CachedCard struct {
@@ -40,29 +82,43 @@ type CachedCard struct {
 
 // Init opens or creates the SQLite database
 func Init(dataDir string) error {
+	dbMu.Lock()
+	defer dbMu.Unlock()
+
+	// Already initialized
+	if db != nil {
+		return nil
+	}
+
 	if err := os.MkdirAll(dataDir, 0755); err != nil {
 		return fmt.Errorf("failed to create data directory: %w", err)
 	}
 
 	dbPath := filepath.Join(dataDir, "cards.db")
-	var err error
-	db, err = sql.Open("sqlite3", dbPath)
+	sqlDB, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
 		return fmt.Errorf("failed to open database: %w", err)
 	}
 
 	// Enable WAL mode for better concurrency
-	if _, err := db.Exec("PRAGMA journal_mode=WAL;"); err != nil {
+	if _, err := sqlDB.Exec("PRAGMA journal_mode=WAL;"); err != nil {
 		return fmt.Errorf("failed to set WAL mode: %w", err)
 	}
 
+	// Configure connection pool for better concurrency
+	sqlDB.SetMaxOpenConns(25)
+	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetConnMaxLifetime(5 * time.Minute)
+
+	db = &database{DB: sqlDB}
+
 	// Create tables
-	if err := createTables(); err != nil {
+	if err := createTablesLocked(); err != nil {
 		return fmt.Errorf("failed to create tables: %w", err)
 	}
 
 	// Migrate: add DFC columns if missing
-	if err := migrateAddDFCColumns(); err != nil {
+	if err := migrateAddDFCColumnsLocked(); err != nil {
 		return fmt.Errorf("failed to migrate DFC columns: %w", err)
 	}
 
@@ -70,7 +126,7 @@ func Init(dataDir string) error {
 }
 
 // migrateAddDFCColumns adds back_image_uri and is_double_faced columns if they don't exist.
-func migrateAddDFCColumns() error {
+func migrateAddDFCColumnsLocked() error {
 	// Check if column exists by attempting a query
 	_, err := db.Exec("SELECT back_image_uri FROM cards LIMIT 0")
 	if err != nil {
@@ -86,7 +142,7 @@ func migrateAddDFCColumns() error {
 }
 
 // createTables creates the necessary database tables
-func createTables() error {
+func createTablesLocked() error {
 	schema := `
 	CREATE TABLE IF NOT EXISTS cards (
 		name TEXT PRIMARY KEY,
@@ -144,6 +200,13 @@ func GetCard(name string) (*CachedCard, error) {
 }
 
 func getCardByName(name string) (*CachedCard, error) {
+	dbMu.RLock()
+	defer dbMu.RUnlock()
+
+	if db == nil || db.DB == nil {
+		return nil, fmt.Errorf("database not initialized")
+	}
+
 	var card CachedCard
 	err := db.QueryRow(`
 		SELECT name, oracle_id, oracle_text, type_line, mana_cost, cmc, 
@@ -172,6 +235,13 @@ func getCardByName(name string) (*CachedCard, error) {
 
 // UpsertCard inserts or updates a card in the cache
 func UpsertCard(card *CachedCard) error {
+	dbMu.RLock()
+	defer dbMu.RUnlock()
+
+	if db == nil || db.DB == nil {
+		return fmt.Errorf("database not initialized")
+	}
+
 	_, err := db.Exec(`
 		INSERT INTO cards (name, oracle_id, oracle_text, type_line, mana_cost, cmc, 
 		                  colors, color_identity, set_code, set_name, collector_number,
@@ -209,6 +279,13 @@ func UpsertCard(card *CachedCard) error {
 
 // IsStale checks if a card's data is older than the given hours
 func IsStale(name string, hours int) (bool, error) {
+	dbMu.RLock()
+	defer dbMu.RUnlock()
+
+	if db == nil || db.DB == nil {
+		return false, fmt.Errorf("database not initialized")
+	}
+
 	var updatedAt time.Time
 	err := db.QueryRow("SELECT updated_at FROM cards WHERE LOWER(name) = LOWER(?)", name).Scan(&updatedAt)
 	if err == sql.ErrNoRows {
@@ -242,7 +319,7 @@ func FromScryfallCard(sc *scryfall.Card) *CachedCard {
 		PriceUSDFoil:    nullString(sc.Prices.USDFoil),
 		PriceEUR:        nullString(sc.Prices.EUR),
 		PriceEURFoil:    nullString(sc.Prices.EURFoil),
-		Legalities:      mapToJSON(sc.Legalities),
+		Legalities:      MapToJSON(sc.Legalities),
 		UpdatedAt:       time.Now(),
 	}
 }
@@ -258,7 +335,8 @@ func joinStrings(s []string) string {
 	return result
 }
 
-func mapToJSON(m map[string]string) string {
+// MapToJSON converts a map to JSON string - fixed version with proper escaping
+func MapToJSON(m map[string]string) string {
 	if m == nil {
 		return "{}"
 	}
@@ -268,10 +346,34 @@ func mapToJSON(m map[string]string) string {
 		if !first {
 			result += ","
 		}
-		result += fmt.Sprintf("\"%s\":\"%s\"", k, v)
+		// Escape special characters in values
+		escapedV := escapeJSON(v)
+		result += fmt.Sprintf("\"%s\":\"%s\"", escapeJSON(k), escapedV)
 		first = false
 	}
 	result += "}"
+	return result
+}
+
+// escapeJSON escapes special characters in JSON strings
+func escapeJSON(s string) string {
+	result := ""
+	for _, c := range s {
+		switch c {
+		case '"':
+			result += "\\\""
+		case '\\':
+			result += "\\\\"
+		case '\n':
+			result += "\\n"
+		case '\r':
+			result += "\\r"
+		case '\t':
+			result += "\\t"
+		default:
+			result += string(c)
+		}
+	}
 	return result
 }
 
@@ -284,12 +386,26 @@ func nullString(s string) sql.NullString {
 
 // ClearUnmatchedCards removes all unmatched card records for a given deck slug.
 func ClearUnmatchedCards(deckSlug string) error {
+	dbMu.RLock()
+	defer dbMu.RUnlock()
+
+	if db == nil || db.DB == nil {
+		return fmt.Errorf("database not initialized")
+	}
+
 	_, err := db.Exec("DELETE FROM unmatched_cards WHERE deck_slug = ?", deckSlug)
 	return err
 }
 
 // AddUnmatchedCard records a card that couldn't be found on Scryfall
 func AddUnmatchedCard(name, deckSlug string) error {
+	dbMu.RLock()
+	defer dbMu.RUnlock()
+
+	if db == nil || db.DB == nil {
+		return fmt.Errorf("database not initialized")
+	}
+
 	_, err := db.Exec(`
 		INSERT OR REPLACE INTO unmatched_cards (name, deck_slug, created_at)
 		VALUES (?, ?, ?)
@@ -299,6 +415,13 @@ func AddUnmatchedCard(name, deckSlug string) error {
 
 // GetUnmatchedCards retrieves all unmatched cards for a deck
 func GetUnmatchedCards(deckSlug string) ([]string, error) {
+	dbMu.RLock()
+	defer dbMu.RUnlock()
+
+	if db == nil || db.DB == nil {
+		return nil, fmt.Errorf("database not initialized")
+	}
+
 	rows, err := db.Query("SELECT name FROM unmatched_cards WHERE deck_slug = ?", deckSlug)
 	if err != nil {
 		return nil, err
@@ -318,8 +441,23 @@ func GetUnmatchedCards(deckSlug string) ([]string, error) {
 
 // Close closes the database connection
 func Close() error {
-	if db != nil {
-		return db.Close()
+	dbMu.Lock()
+	defer dbMu.Unlock()
+
+	if db != nil && db.DB != nil {
+		return db.DB.Close()
 	}
 	return nil
+}
+
+// Reset closes the current database and resets the global to nil
+// Useful for testing to ensure clean state
+func Reset() {
+	dbMu.Lock()
+	defer dbMu.Unlock()
+
+	if db != nil && db.DB != nil {
+		db.DB.Close()
+	}
+	db = nil
 }

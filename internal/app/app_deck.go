@@ -13,22 +13,11 @@ type DeckSummary struct {
 	Universe  string `json:"universe,omitempty"`
 }
 
-// GetAllDecks returns summaries of all loaded decks.
+// GetAllDecks returns summaries of all loaded decks (thread-safe).
 func (a *App) GetAllDecks() []DeckSummary {
-	var summaries []DeckSummary
-	for _, d := range a.decks {
-		status := normalizeStatus(d.Info.Status)
-		summaries = append(summaries, DeckSummary{
-			Slug:      d.Slug,
-			Title:     d.Info.Title,
-			Commander: d.Info.Commander,
-			Colors:    d.Info.Colors,
-			Status:    status,
-			CardCount: d.CardCount,
-			Universe:  d.Info.Universe,
-		})
-	}
-	return summaries
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	return a.getAllDecksUnsafe()
 }
 
 // SyncResult is returned by GetDeck to include not-found card names.
@@ -37,15 +26,12 @@ type SyncResult struct {
 	NotFound []string   `json:"notFound"`
 }
 
-// GetDeck returns the full deck data for a given slug with Scryfall sync.
+// GetDeck returns the full deck data for a given slug with Scryfall sync (thread-safe).
 func (a *App) GetDeck(slug string) *SyncResult {
-	var d *deck.Deck
-	for i := range a.decks {
-		if a.decks[i].Slug == slug {
-			d = &a.decks[i]
-			break
-		}
-	}
+	a.mu.RLock()
+	d := a.getDeckUnsafe(slug)
+	a.mu.RUnlock()
+
 	if d == nil {
 		return nil
 	}
@@ -58,8 +44,15 @@ func (a *App) GetDeck(slug string) *SyncResult {
 	}
 }
 
-// GetDeckBasic returns deck data without Scryfall sync (faster).
+// GetDeckBasic returns deck data without Scryfall sync (faster, thread-safe).
 func (a *App) GetDeckBasic(slug string) *deck.Deck {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	return a.getDeckUnsafe(slug)
+}
+
+// getDeckUnsafe returns a pointer to a deck by slug (caller must hold read lock)
+func (a *App) getDeckUnsafe(slug string) *deck.Deck {
 	for i := range a.decks {
 		if a.decks[i].Slug == slug {
 			return &a.decks[i]

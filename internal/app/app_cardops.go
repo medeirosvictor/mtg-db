@@ -10,8 +10,10 @@ import (
 
 // ReloadDecks re-reads all deck files from disk.
 func (a *App) ReloadDecks() []DeckSummary {
-	a.loadDecks()
-	return a.GetAllDecks()
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.loadDecksUnsafe()
+	return a.getAllDecksUnsafe()
 }
 
 // ToggleCardTag toggles a tag on a card in a deck and writes to disk.
@@ -20,16 +22,13 @@ func (a *App) ToggleCardTag(slug string, cardName string, tag string) *deck.Deck
 		return nil
 	}
 
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
 	deckDir := filepath.Join(a.config.DecksDir(), slug)
 	deckPath := filepath.Join(deckDir, "deck.txt")
 
-	var deckIdx int = -1
-	for i, d := range a.decks {
-		if d.Slug == slug {
-			deckIdx = i
-			break
-		}
-	}
+	deckIdx := a.getDeckIndexUnsafe(slug)
 	if deckIdx == -1 {
 		return nil
 	}
@@ -93,16 +92,13 @@ func (a *App) AddCards(slug string, cardLines string) string {
 		return "No active collection"
 	}
 
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
 	deckDir := filepath.Join(a.config.DecksDir(), slug)
 	deckPath := filepath.Join(deckDir, "deck.txt")
 
-	var deckIdx int = -1
-	for i, d := range a.decks {
-		if d.Slug == slug {
-			deckIdx = i
-			break
-		}
-	}
+	deckIdx := a.getDeckIndexUnsafe(slug)
 	if deckIdx == -1 {
 		return "Deck not found"
 	}
@@ -142,16 +138,13 @@ func (a *App) UpdateCardQuantity(slug string, cardName string, quantity int) str
 		return "No active collection"
 	}
 
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
 	deckDir := filepath.Join(a.config.DecksDir(), slug)
 	deckPath := filepath.Join(deckDir, "deck.txt")
 
-	var deckIdx int = -1
-	for i, d := range a.decks {
-		if d.Slug == slug {
-			deckIdx = i
-			break
-		}
-	}
+	deckIdx := a.getDeckIndexUnsafe(slug)
 	if deckIdx == -1 {
 		return "Deck not found"
 	}
@@ -182,16 +175,13 @@ func (a *App) UpdateCardText(slug string, oldName string, newLine string) string
 		return "No active collection"
 	}
 
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
 	deckDir := filepath.Join(a.config.DecksDir(), slug)
 	deckPath := filepath.Join(deckDir, "deck.txt")
 
-	var deckIdx int = -1
-	for i, d := range a.decks {
-		if d.Slug == slug {
-			deckIdx = i
-			break
-		}
-	}
+	deckIdx := a.getDeckIndexUnsafe(slug)
 	if deckIdx == -1 {
 		return "Deck not found"
 	}
@@ -233,4 +223,45 @@ func (a *App) UpdateCardText(slug string, oldName string, newLine string) string
 	}
 
 	return ""
+}
+
+// Helper functions that assume lock is already held
+func (a *App) loadDecksUnsafe() {
+	if a.config == nil || !a.config.HasActiveCollection() {
+		a.decks = nil
+		return
+	}
+	decks, err := deck.LoadAllDecks(a.config.DecksDir())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "warning: could not load decks: %v\n", err)
+		a.decks = nil
+		return
+	}
+	a.decks = decks
+}
+
+func (a *App) getDeckIndexUnsafe(slug string) int {
+	for i := range a.decks {
+		if a.decks[i].Slug == slug {
+			return i
+		}
+	}
+	return -1
+}
+
+func (a *App) getAllDecksUnsafe() []DeckSummary {
+	var summaries []DeckSummary
+	for _, d := range a.decks {
+		status := normalizeStatus(d.Info.Status)
+		summaries = append(summaries, DeckSummary{
+			Slug:      d.Slug,
+			Title:     d.Info.Title,
+			Commander: d.Info.Commander,
+			Colors:    d.Info.Colors,
+			Status:    status,
+			CardCount: d.CardCount,
+			Universe:  d.Info.Universe,
+		})
+	}
+	return summaries
 }

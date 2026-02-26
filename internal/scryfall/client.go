@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -20,8 +21,9 @@ const (
 )
 
 var (
-	lastRequest time.Time
-	rateLimiter chan struct{} = make(chan struct{}, 1)
+	lastRequest  time.Time
+	rateLimiter  chan struct{} = make(chan struct{}, 1)
+	lastReqMu    sync.Mutex    // Protects lastRequest
 )
 
 func init() {
@@ -185,11 +187,15 @@ func NewClient() *Client {
 // waitForRateLimit ensures we don't exceed Scryfall's rate limits
 func (c *Client) waitForRateLimit() {
 	<-rateLimiter
+
+	lastReqMu.Lock()
 	elapsed := time.Since(lastRequest)
 	if elapsed < RateLimitMs*time.Millisecond {
 		time.Sleep(RateLimitMs*time.Millisecond - elapsed)
 	}
 	lastRequest = time.Now()
+	lastReqMu.Unlock()
+
 	rateLimiter <- struct{}{}
 }
 
