@@ -4,6 +4,7 @@
   import CardGridItem from './CardGridItem.svelte';
   import WishlistSection from './WishlistSection.svelte';
   import ContextMenu from '../../components/ContextMenu.svelte';
+  import CardInspectModal from '../../components/CardInspectModal.svelte';
   import { createEventDispatcher } from 'svelte';
 
   export let deck: any;
@@ -18,6 +19,9 @@
 
   // DFC flip state
   let flippedCards: Record<string, boolean> = {};
+
+  // Inspect modal state
+  let inspectedCard: Card | null = null;
 
   // Context menu state
   let menuVisible = false;
@@ -93,6 +97,7 @@
         isFlipped={!!flippedCards[card.name]}
         on:contextmenu={(e) => showCardContextMenu(e.detail, card)}
         on:flip={() => toggleFlip(card.name)}
+        on:inspect={() => inspectedCard = card}
       />
     {/each}
   </div>
@@ -110,3 +115,10 @@
   y={menuY}
   items={menuItems}
 />
+
+{#if inspectedCard}
+  <CardInspectModal
+    card={inspectedCard}
+    on:close={() => inspectedCard = null}
+  />
+{/if}

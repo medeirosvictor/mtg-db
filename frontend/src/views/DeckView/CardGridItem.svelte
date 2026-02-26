@@ -11,6 +11,7 @@
   const dispatch = createEventDispatcher<{
     contextmenu: MouseEvent;
     flip: void;
+    inspect: void;
   }>();
 
   function getBadges(card: Card): string[] {
@@ -32,6 +33,7 @@
     {isCommander ? 'border-mauve' : ''}
     {isNotFound ? 'border-red' : 'border-border'}"
   on:contextmenu={(e) => dispatch('contextmenu', e)}
+  on:click={() => dispatch('inspect')}
   role="button"
   tabindex="0"
 >

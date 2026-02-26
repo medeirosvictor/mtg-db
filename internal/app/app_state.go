@@ -4,7 +4,7 @@ import "app/internal/config"
 
 // AppState is sent to the frontend on startup to determine what view to show.
 type AppState struct {
-	hasCollection   bool             `json:"hasCollection"`
+	HasCollection   bool             `json:"hasCollection"`
 	CollectionPath  string           `json:"collectionPath"`
 	CollectionLabel string           `json:"collectionLabel"`
 	CollectionValid bool             `json:"collectionValid"`
@@ -28,11 +28,11 @@ func (a *App) GetAppState() AppState {
 	}
 
 	state := AppState{
-		hasCollection: a.config.HasActiveCollection(),
+		HasCollection: a.config.HasActiveCollection(),
 		NeedsSetup:    !a.config.HasActiveCollection(),
 	}
 
-	if state.hasCollection {
+	if state.HasCollection {
 		state.CollectionPath = a.config.ActiveCollectionPath()
 		err := config.ValidateCollectionDir(state.CollectionPath)
 		state.CollectionValid = err == nil

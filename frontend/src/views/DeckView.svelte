@@ -25,7 +25,7 @@
   let loading = true;
   let scryfallLoading = false;
   let error = '';
-  let viewMode: 'list' | 'grid' = 'list';
+  let viewMode: 'list' | 'grid' = 'grid';
 
   // Not-found cards from Scryfall sync
   let notFoundCards: Set<string> = new Set();
