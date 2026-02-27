@@ -1,9 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import type { DeckSummary } from '../lib/types';
-  import { GetAllDecks } from '../../wailsjs/go/app/App';
-  import DeckCard from '../components/DeckCard.svelte';
-  import ImportNewDeckModal from '../components/ImportNewDeckModal.svelte';
+  import type { DeckSummary } from '../../lib/types';
+  import { GetAllDecks } from '../../../wailsjs/go/app/App';
+  import DeckCard from '../../components/DeckCard.svelte';
+  import ImportNewDeckModal from '../../components/ImportNewDeckModal.svelte';
   import { createEventDispatcher } from 'svelte';
 
   const dispatch = createEventDispatcher();
@@ -98,9 +98,9 @@
             </div>
           </div>
         {/if}
-        <button 
+        <button
           class="whitespace-nowrap bg-bg-surface border border-border text-text-secondary px-4 py-2 rounded-lg text-sm font-semibold hover:bg-bg-hover hover:border-accent hover:text-accent transition-all"
-          on:click={() => showImportModal = true} 
+          on:click={() => showImportModal = true}
           title="Import a new deck from URL or card list"
         >
           📥 Import Deck
@@ -120,9 +120,9 @@
         placeholder="Search decks by name, commander, colors, status...  (Ctrl+F)"
       />
       {#if searchQuery}
-        <button 
-          class="bg-transparent border-none text-text-muted cursor-pointer text-sm px-1.5 py-0.5 rounded hover:text-text-primary hover:bg-bg-hover flex-shrink-0 transition-colors" 
-          on:click={() => { searchQuery = ''; searchInput?.focus(); }} 
+        <button
+          class="bg-transparent border-none text-text-muted cursor-pointer text-sm px-1.5 py-0.5 rounded hover:text-text-primary hover:bg-bg-hover flex-shrink-0 transition-colors"
+          on:click={() => { searchQuery = ''; searchInput?.focus(); }}
           title="Clear search"
         >✕</button>
         <span class="text-xs text-text-muted flex-shrink-0 whitespace-nowrap">{filteredDecks.length} / {decks.length}</span>

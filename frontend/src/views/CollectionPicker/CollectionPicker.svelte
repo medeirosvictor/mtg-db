@@ -1,7 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  import type { CollectionInfo } from '../lib/types';
-  import { SelectCollectionFolder, InitializeAndSelectFolder, SwitchCollection, RemoveKnownCollection } from '../../wailsjs/go/app/App';
+  import type { CollectionInfo } from '../../lib/types';
+  import { SelectCollectionFolder, InitializeAndSelectFolder, SwitchCollection, RemoveKnownCollection } from '../../../wailsjs/go/app/App';
 
   export let collections: CollectionInfo[] = [];
   export let invalidPath: string = '';
@@ -107,17 +107,17 @@
     {/if}
 
     <div class="flex flex-col gap-3 mb-8">
-      <button 
+      <button
         class="flex items-center justify-center gap-2.5 px-6 py-3.5 bg-accent text-bg-primary rounded-lg text-[15px] font-semibold hover:bg-accent-hover transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-        on:click={selectExisting} 
+        on:click={selectExisting}
         disabled={loading}
       >
         <span class="text-lg">📂</span>
         Open Collection Folder
       </button>
-      <button 
+      <button
         class="flex items-center justify-center gap-2.5 px-6 py-3.5 bg-bg-surface text-text-primary border border-border rounded-lg text-[15px] font-semibold hover:bg-bg-hover hover:border-accent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-        on:click={initializeNew} 
+        on:click={initializeNew}
         disabled={loading}
       >
         <span class="text-lg">✨</span>
@@ -131,7 +131,7 @@
         <div class="flex flex-col gap-2">
           {#each validCollections as col}
             <div class="flex items-center gap-1">
-              <button 
+              <button
                 class="flex-1 flex flex-col items-start p-3 bg-bg-secondary border border-border rounded-lg hover:bg-bg-hover hover:border-accent transition-all cursor-pointer"
                 on:click={() => switchTo(col.path)}
               >

@@ -1,9 +1,10 @@
 <script lang="ts">
   import type { Card } from '../../lib/types';
-  import { isBasicLand, cardToText } from '../../lib/cardUtils';
+  import { isBasicLand, cardToText, filterMainDeck, filterSideboard } from '../../lib/cardUtils';
   import { UpdateCardText, ToggleCardTag } from '../../../wailsjs/go/app/App';
   import CardRow from './CardRow.svelte';
   import WishlistSection from './WishlistSection.svelte';
+  import SideboardSection from './SideboardSection.svelte';
   import ContextMenu from '../../components/ContextMenu.svelte';
   import { createEventDispatcher } from 'svelte';
 
@@ -12,6 +13,11 @@
   export let wishlistCards: Card[];
   export let notFoundCards: Set<string>;
   export let slug: string;
+
+  // Derive main deck and sideboard from cards
+  $: mainDeckCards = filterMainDeck(cards);
+  $: sideboardCards = filterSideboard(cards);
+  $: mainDeckCount = mainDeckCards.reduce((sum, c) => sum + c.quantity, 0);
 
   const dispatch = createEventDispatcher<{
     cardUpdated: void;
@@ -47,17 +53,17 @@
     if (selectAll) {
       selectedCards.clear();
     } else {
-      cards.forEach(card => selectedCards.add(card.name));
+      mainDeckCards.forEach(card => selectedCards.add(card.name));
     }
     selectedCards = selectedCards;
     selectAll = !selectAll;
   }
 
   function updateSelectAll() {
-    if (cards.length === 0) {
+    if (mainDeckCards.length === 0) {
       selectAll = false;
     } else {
-      selectAll = cards.every(card => selectedCards.has(card.name));
+      selectAll = mainDeckCards.every(card => selectedCards.has(card.name));
     }
   }
 
@@ -182,6 +188,7 @@
     const isCommander = tags.includes('commander');
     const isProxy = tags.includes('proxy');
     const isWishlisted = tags.includes('wishlist');
+    const isSideboard = tags.includes('sideboard');
     const commanderCount = deck?.cards?.filter((c: Card) => (c.tags || []).includes('commander')).length || 0;
 
     menuItems = [
@@ -193,6 +200,12 @@
         action: () => toggleTag(card.name, 'commander'),
       },
       { separator: true },
+      {
+        label: isSideboard ? 'Move to Main Deck' : 'Move to Sideboard',
+        icon: '📋',
+        checked: isSideboard,
+        action: () => toggleTag(card.name, 'sideboard'),
+      },
       {
         label: isProxy ? 'Unmark as Proxy' : 'Mark as Proxy',
         icon: '🖨️',
@@ -223,7 +236,7 @@
 </script>
 
 <section>
-  <h2 class="text-base font-semibold mb-3 text-text-secondary">Cards ({cards.length} unique, {deck?.cardCount} total)</h2>
+  <h2 class="text-base font-semibold mb-3 text-text-secondary">Cards ({mainDeckCards.length} unique, {mainDeckCount} total)</h2>
   <div 
     class="bg-bg-secondary border border-border rounded-lg overflow-hidden"
     on:contextmenu={(e) => {
@@ -248,7 +261,7 @@
       <span class="w-16 flex-shrink-0 text-right">Price</span>
       <span class="w-24 flex-shrink-0 text-right">Set</span>
     </div>
-    {#each cards as card (card.name)}
+    {#each mainDeckCards as card (card.name)}
       <CardRow
         {card}
         isNotFound={isNotFound(card.name)}
@@ -269,6 +282,10 @@
     {/each}
   </div>
 </section>
+
+{#if sideboardCards.length > 0}
+  <SideboardSection cards={sideboardCards} />
+{/if}
 
 {#if wishlistCards.length > 0}
   <WishlistSection 

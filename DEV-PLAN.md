@@ -1,403 +1,295 @@
 # DEV-PLAN.md — MTG Desktop App
 
-> A lightweight, fully local desktop app for tracking personal MTG Commander decks, collection, wishlists, prices, and proxy planning. Built with **Wails (Go)** + **Svelte** + **SQLite**.
-
 ---
 
-## Principles
+## Core Principles
 
-- **Plain text is king.** The existing `decks/*/deck.txt`, `info.md`, `wishlist.txt` files remain the source of truth. The app reads and writes them — never replaces them.
-- **Offline-first.** The app works without internet after first sync. Scryfall data and images are cached locally.
-- **No bloat.** No accounts, no cloud, no social features, no ads. Just your cards.
-- **Proxy-aware.** First-class support for marking cards as proxy vs real. Price thresholds for auto-suggesting proxies.
-- **Single binary.** Wails produces one executable (~10MB) using the OS native webview. No Electron. No browser dependency.
+1. **Test-Driven Development (TDD).** Always write tests first. Verify tests FAIL (Red) before implementing the feature correctly (Green).
+2. **Maintainability & Readability.** Code is read more than written. Prioritize clarity over cleverness.
+3. **Single Responsibility.** Keep files short. Each file/function/module should have one clear purpose.
+4. **Backend First.** Always implement backend functionality before frontend. Solidify the core logic in Go before building UI/UX in Svelte.
 
 ---
 
 ## Tech Stack
 
-| Layer | Choice | Why |
-|-------|--------|-----|
-| Desktop framework | **Wails v2** | Native webview, single binary, Go backend with JS frontend bindings |
-| Backend | **Go** | Fast, simple, great for file I/O, HTTP clients, SQLite, concurrency |
-| Frontend | **Svelte + Vite** (not SvelteKit) | Tiny, fast, compiles away — perfect for a desktop UI with no server |
-| Database | **SQLite** | Card metadata/price cache only — not the source of truth |
-| Card data API | **Scryfall** (free, no auth) | Card metadata, images, prices, set info |
-| Proxy art API | **MPC Autofill** (optional) | Community-uploaded proxy art for MakePlayingCards printing |
-| Search | **Built-in fuzzy match** | `strings.Contains` / trigram in Go, or Fuse.js on frontend |
+| Layer | Choice |
+|-------|--------|
+| Desktop framework | Wails v2 |
+| Backend | Go |
+| Frontend | Svelte + Vite |
+| Database | SQLite |
+| Card data API | Scryfall |
+| Proxy art API | MPC Autofill (optional) |
+| Search | Fuzzy match |
+
+---
+
+## Data Flow
+
+**Plain text files are the source of truth:**
+- `decks/*/deck.txt` — card list
+- `decks/*/info.md` — metadata
+- `decks/*/wishlist.txt` — per-deck wishlist
+
+**App data** (`%APPDATA%/mtg-db/`):
+- `config.json` — collection paths + preferences
+- `cards.db` — SQLite card/price cache
+- `images/cache/` — Scryfall card images
 
 ---
 
 ## Current Repo Structure
 
 ```
-mtg-db/                              ← App repo (code only)
+mtg-db/
   main.go
-  app.go
   go.mod, go.sum
   wails.json
   internal/
-    config/                          ← Config (reads %APPDATA%/mtg-db/config.json)
-    deck/                            ← Deck parser
+    app/            # Wails app handlers
+    config/         # Config management
+    deck/           # Deck parser
+    deckimport/     # Deck import (Moxfield)
+    db/             # SQLite cache
+    scryfall/       # Scryfall API client
   frontend/
     src/
       App.svelte
-      lib/
-      views/
-      components/
+      lib/          # Utilities, types, utils
+      views/        # Page components
+      components/   # Reusable components
   build/
-  README.md
-  DEV-PLAN.md
 ```
 
-**Collection folder** (user-selected, separate from app repo):
-```
-~/mtg-collection/
-  decks/
-    <deck-slug>/
-      deck.txt                       ← Required (card list)
-      info.md                        ← Optional (metadata)
-      wishlist.txt                   ← Optional (per-deck wishlist)
-      images/                        ← Optional (per-deck image overrides)
-  wishlists/                         ← Optional (global wishlists)
-  history/                           ← Optional (order history, read-only)
-```
+---
 
-**App data** (`%APPDATA%/mtg-db/`):
-```
-  config.json                        ← Collection paths + preferences
-  cards.db                           ← SQLite card/price cache
-  images/
-    cache/                           ← Scryfall card images
-    custom/                          ← Global custom image overrides
-    mpc/                             ← MPC Autofill cached art
-```
+## Card Format (parser supports)
 
-**Card format** (parser handles all variants):
 ```
-1 Card Name                          ← qty + name (no "x")
-1x Card Name                        ← qty + "x" + name
-1 Card Name (SET) 123               ← with set code + collector number
-1x Card Name (SET) 123 *F*          ← with foil marker
+1 Card Name                          ← qty + name
+1x Card Name (SET) 123 *F*          ← with set code, collector number, foil
 1 Card A / Card B (SET) 123         ← double-faced cards
 ```
 
 ---
 
-## What's Done
+## Implemented Features
 
-- Wails project scaffolded, builds and runs on Windows (10MB binary)
-- Deck parser with 14 unit + integration tests (861 cards, 8 decks, 0 parse errors)
-- Frontend: deck list dashboard with color pips, status badges, card counts, stats
-- Frontend: deck detail view with sorted card table and wishlist section
-- Dark theme (Catppuccin Mocha-inspired)
-- Collection folder separation: app is standalone, points at any collection folder
-- Config in `%APPDATA%/mtg-db/config.json`, first-launch folder picker, collection switcher
-- Basic deck editing: add/remove cards, quantity adjust (±), deck name/description editing
-
----
-
-## Phase 1 — Scryfall Integration + Visual Deck Browser
-
-**Goal:** Browse your decks visually with card images and prices. This is the "I can actually use this" milestone.
-
-### 1A — Scryfall Integration + SQLite Cache
-
-- [ ] Scryfall API client in Go:
-  - `GET /cards/named?fuzzy=<name>` — single card lookup
-  - `GET /cards/named?exact=<name>` — exact match
-  - `POST /cards/collection` — bulk lookup (up to 75 cards per request)
-  - Rate limiting: max 10 req/sec, 50-100ms between requests
-- [ ] SQLite schema for card cache:
-  ```sql
-  CREATE TABLE cards (
-    name TEXT PRIMARY KEY,
-    scryfall_id TEXT,
-    oracle_text TEXT,
-    type_line TEXT,
-    color_identity TEXT,   -- JSON array
-    mana_cost TEXT,
-    cmc REAL,
-    set_code TEXT,
-    collector_number TEXT,
-    image_uri TEXT,         -- Scryfall image URL
-    price_usd TEXT,
-    price_usd_foil TEXT,
-    price_eur TEXT,
-    legalities TEXT,        -- JSON object
-    updated_at DATETIME
-  );
-  ```
-- [ ] On app launch / deck load: bulk-sync deck cards against Scryfall → cache in SQLite
-- [ ] Price staleness: re-fetch prices if cache is older than 24 hours (configurable)
-- [ ] Image download: fetch `image_uris.normal` (488×680, ~60KB each) → save to `%APPDATA%/mtg-db/images/cache/`
-
-### 1B — Deck View
-
-- [ ] Deck detail view with two modes:
-  - **Grid view** — card images in a responsive grid (4-6 columns)
-  - **List view** — compact table: name, type, mana cost, price, qty
-- [ ] Per-card info on hover/click: oracle text, type line, mana cost, price, set, legality
-- [ ] Deck summary header:
-  - Commander name + image
-  - Color identity icons
-  - Total card count (highlight if ≠ 100 non-sideboard cards)
-  - Total deck price (USD)
-  - Status badge (Owned / Planned / Disassembled)
-- [ ] Category grouping: sort cards by type (Creatures, Instants, Sorceries, Artifacts, Enchantments, Lands, etc.)
-- [ ] Mana curve visualization (simple bar chart)
-- [ ] Sideboard tag support:
-  - Add `#sideboard` tag constant alongside existing `#commander`, `#proxy`, `#wishlist`
-  - Sideboard cards displayed in a separate section below main deck list
-  - Card count validation: deck is valid when exactly 100 **non-sideboard** cards
-  - Context menu toggle: "Move to Sideboard" / "Move to Main Deck"
-  - Sideboard badge on tagged cards
-
-### 1C — Deck List (Home Screen)
-
-- [ ] Dashboard showing all decks as cards/tiles:
-  - Deck name, commander image, color identity, card count, total price, status
-- [ ] Click a deck → navigate to deck detail view
-- [ ] Quick stats: total collection value, total decks, total unique cards
-
-### 1D — Search
-
-- [ ] Global search bar (always accessible, keyboard shortcut `Ctrl+K`)
-- [ ] Fuzzy match across all decks and wishlists
-- [ ] Results show: card name, which deck(s) it's in, quantity, price
-- [ ] Fast — should feel instant, no loading spinners
-
-### 1E — Remaining Editing Polish
-
-- [ ] Edit other info.md fields (status, colors, universe) via a settings/edit modal
+| Feature | Status |
+|---------|--------|
+| Wails + Svelte + Go setup | ✅ Done |
+| Deck parser (unit + integration tests) | ✅ Done |
+| Dark theme (Catppuccin Mocha) | ✅ Done |
+| Collection folder separation | ✅ Done |
+| Config in `%APPDATA%` | ✅ Done |
+| Deck list dashboard | ✅ Done |
+| Color pips + status badges | ✅ Done |
+| Deck detail view (grid + list) | ✅ Done |
+| Card sorting (commander → land → alpha) | ✅ Done |
+| Per-card inspect modal | ✅ Done |
+| Deck sync with Scryfall | ✅ Done |
+| SQLite card/price cache | ✅ Done |
+| Image caching | ✅ Done |
+| Global search (`Ctrl+K`) | ✅ Done |
+| Edit deck title/strategy/status | ✅ Done |
+| Import deck (paste) | ✅ Done |
+| Export deck | ✅ Done |
+| Basic deck editing (add/remove/qty) | ✅ Done |
 
 ---
 
-## Phase 2 — Collection Management + Wishlists
+## Remaining Work
 
-**Goal:** Track what you actually own, plan purchases, manage proxies.
+### Sideboard Support (Fully Implemented ✅)
 
-### 2A — Collection Tracking
-
-- [ ] New data layer: `data/collection.json` (or SQLite table)
-  ```json
-  {
-    "Sol Ring": { "owned": 3, "proxy": false },
-    "Mana Crypt": { "owned": 0, "proxy": true }
-  }
-  ```
-- [ ] Per-card "owned" quantity — distinct from "in deck" quantity
-- [ ] Cross-deck awareness: "Sol Ring is in 5 decks, you own 3 → need 2 proxies"
-- [ ] Proxy flag per card: mark as proxy vs real
-- [ ] Bulk import: paste a list of owned cards to seed the collection
-- [ ] Collection summary view: total cards owned, total value, proxy count
-
-### 2B — Wishlist & Purchase Planning
-
-- [ ] Wishlist view that aggregates:
-  - Per-deck `wishlist.txt` files
-  - `wishlists/master-purchase-list.txt`
-- [ ] Sort by: price (cheapest first), deck, card name, color
-- [ ] Tag cards as "buy real" vs "proxy print"
-- [ ] Price threshold setting: auto-flag cards above $X as proxy candidates (default: $5)
-- [ ] Purchase summary: "You need to buy 47 cards for $123.45 + proxy 12 cards"
-- [ ] Export purchase list as text (copy-paste to TCGPlayer/Card Kingdom)
-
-### 2C — Overlap Detection
-
-- [ ] Built-in replacement for `find-overlaps.sh`
-- [ ] Visual overlap matrix: which decks share which cards
-- [ ] Warning badges on shared cards: "This card is in 3 decks but you own 1"
-
-### 2D — Deck Validation
-
-- [ ] Built-in replacement for `validate-decks.sh`
-- [ ] Validate on load: card count, color identity vs commander, card legality
-- [ ] Warnings (not errors) — this is casual Commander, not competitive
-- [ ] Flag unknown cards (not found on Scryfall)
+- [x] Add `#sideboard` tag support (Go + TS)
+- [x] Filter main deck vs sideboard (Go + TS)
+- [x] Validation: exactly 100 non-sideboard cards (Go + TS)
+- [x] `ToggleCardTag` already supports sideboard via existing API
+- [x] Display sideboard cards in separate section in UI (List + Grid views)
+- [x] Context menu: "Move to Sideboard" / "Move to Main Deck"
 
 ---
 
-## Phase 3 — Advanced Deck Editing + Card Management
+### Phase 2 — Collection Management + Wishlists
 
-**Goal:** Scryfall-powered editing features, cross-deck operations, and import.
+#### 2A — Collection Tracking
 
-### 3A — Advanced Card Operations
+- [ ] `collection.json` or SQLite table for owned quantities
+- [ ] Per-card owned count (distinct from deck quantity)
+- [ ] Cross-deck awareness: "Sol Ring in 5 decks, owned 3 → need 2 proxies"
+- [ ] Proxy flag per card
+- [ ] Bulk import owned cards
+- [ ] Collection summary: total cards, value, proxy count
 
-- [ ] Add card to deck: search by name → **Scryfall autocomplete** → add to `deck.txt`
-- [ ] Move card between decks (removes from source, adds to target, updates both `.txt` files)
+#### 2B — Wishlist & Purchase Planning
+
+- [ ] Aggregate wishlists: per-deck + global
+- [ ] Sort by: price, deck, name, color
+- [ ] Tag: "buy real" vs "proxy print"
+- [ ] Auto-flag cards above price threshold (default $5)
+- [ ] Purchase summary: "Need 47 cards for $123.45 + proxy 12"
+- [ ] Export purchase list as text
+
+#### 2C — Overlap Detection
+
+- [ ] Visual overlap matrix: shared cards across decks
+- [ ] Warning badges: "This card is in 3 decks but you own 1"
+
+#### 2D — Deck Validation
+
+- [ ] Validate on load: card count, color identity, legality
+- [ ] Flag unknown cards
+
+---
+
+### Phase 3 — Advanced Deck Editing + Card Management
+
+#### 3A — Advanced Card Operations
+
+- [ ] Add card: Scryfall autocomplete → add to `deck.txt`
+- [ ] Move card between decks
 - [ ] Move card to/from wishlist
-- [ ] Undo/redo for edits
+- [ ] Undo/redo
 
-### 3B — Deck Import
+#### 3B — Deck Import
 
-- [ ] Paste a decklist in standard format (Moxfield/Archidekt/MTGO):
-  ```
-  1x Avenger of Zendikar (ZNR) 178
-  1x Sol Ring (C21) 263
-  3x Forest
-  ```
-- [ ] Parser validates each card against Scryfall
-- [ ] Flags unknown cards with fuzzy suggestions ("Did you mean...?")
-- [ ] Import from URL (Moxfield, Archidekt) via their public APIs — stretch goal
+- [ ] Import from URL (Moxfield, Archidekt)
 
-### 3C — Specific Printings
+#### 3C — Specific Printings
 
-- [ ] When adding a card, show all available printings from Scryfall
-- [ ] Display set symbol, collector number, card image for each printing
-- [ ] Selected printing saved to `deck.txt` in `(SET) 123` format
-- [ ] Bulk "upgrade printings" — choose preferred sets for your whole deck
+- [ ] Show all printings from Scryfall
+- [ ] Display set symbol, collector number, image
+- [ ] Bulk "upgrade printings"
 
 ---
 
-## Phase 4 — Custom Images & Proxy Art
+### Phase 4 — Custom Images & Proxy Art
 
-**Goal:** Full image customization — local files, drag-and-drop, MPC Autofill integration.
+#### 4A — Local Image Overrides
 
-### 4A — Local Image Overrides
-
-- [ ] Image resolution chain:
+- [ ] Resolution chain:
   ```
-  1. <collection>/decks/<deck>/images/<card-slug>.{jpg,png,webp}  → per-deck override
-  2. %APPDATA%/mtg-db/images/custom/<card-slug>.{jpg,png,webp}    → global custom image
-  3. %APPDATA%/mtg-db/images/mpc/<card-slug>--<id>.jpg            → MPC Autofill cached
-  4. %APPDATA%/mtg-db/images/cache/<card-slug>.jpg                → Scryfall cached
-  5. Scryfall API (live fetch if online)
-  6. Placeholder (generic card back)
+  1. <collection>/decks/<deck>/images/<card-slug>.{jpg,png,webp}
+  2. %APPDATA%/mtg-db/images/custom/<card-slug>.{jpg,png,webp}
+  3. %APPDATA%/mtg-db/images/mpc/<card-slug>--<id>.jpg
+  4. %APPDATA%/mtg-db/images/cache/<card-slug>.jpg
+  5. Scryfall API (live)
+  6. Placeholder
   ```
-- [ ] Slug format: `avenger-of-zendikar.jpg` (lowercase, hyphens, strip punctuation)
-- [ ] Drag & drop: drag an image onto a card → app copies it to the right folder
-- [ ] File picker: "Use Local Image" button → native file dialog
-- [ ] Manual: just drop a file in the folder — app detects it (file watcher or refresh)
+- [ ] Slug format: lowercase, hyphens
+- [ ] Drag & drop image onto card
+- [ ] File picker for local images
 
-### 4B — MPC Autofill Integration (Optional, Online)
+#### 4B — MPC Autofill Integration
 
-- [ ] Settings: configure MPC Autofill backend URL (community instances)
-- [ ] "Browse Proxy Art" button per card:
-  1. `POST /2/editorSearch/` — search for community-uploaded art versions
-  2. Display thumbnail grid from their image CDN
-  3. User picks one → download and cache to `data/images/mpc/`
-  4. Image used offline from then on
-- [ ] Rate limiting: 1 request per 100ms (match their desktop tool behavior)
-- [ ] Source attribution: show which community source contributed the image
-- [ ] Browse card backs too (`/2/cardbacks/`)
+- [ ] Configure backend URL
+- [ ] Browse proxy art → download to cache
+- [ ] Rate limiting: 1 req/100ms
+- [ ] Source attribution
 
 ---
 
-## Phase 5 — Nice-to-Have Features
+### Phase 5 — Nice-to-Have
 
-Everything below is post-MVP polish. Build if/when it's useful.
+#### UI / UX
+- [ ] Dark/light theme toggle
+- [ ] Keyboard navigation (`j/k`, `Enter`, `Esc`)
+- [ ] Card zoom popup
+- [ ] Color pie chart
+- [ ] Mana curve chart
+- [ ] Category breakdown chart
+- [ ] Drag & drop deck building
+- [ ] Deck comparison
+- [ ] Print-friendly deck list
 
-### UI / UX
-- [ ] **Dark/light theme toggle** — dark by default (it's an MTG app, come on)
-- [ ] **Keyboard-driven navigation** — `j/k` to move through cards, `Enter` to expand, `Esc` to go back
-- [ ] **Card zoom** — click/hover a card for a large high-res popup
-- [ ] **Deck color pie chart** — visual breakdown of color distribution
-- [ ] **Mana curve chart** — bar chart of CMC distribution
-- [ ] **Card category breakdown** — creatures vs spells vs lands pie chart
-- [ ] **Drag & drop deck building** — drag cards between deck zones visually
-- [ ] **Side-by-side deck comparison** — compare two decks visually
-- [ ] **Print-friendly deck list** — export a clean formatted decklist for paper reference
+#### Data & Sync
+- [ ] MTGJson bulk import
+- [ ] Price history tracking
+- [ ] Price alerts
+- [ ] Multi-format price display
+- [ ] Git integration (deck change history)
+- [ ] Backup/restore (zip export)
 
-### Data & Sync
-- [ ] **MTGJson bulk import** — download full card database for instant offline lookups
-- [ ] **Price history tracking** — store daily prices in SQLite, show price trend per card/deck over time
-- [ ] **Price alerts** — "Sol Ring dropped below $2" (check on app launch)
-- [ ] **Multi-format price display** — USD, EUR, foil vs non-foil toggle
-- [ ] **Git integration** — since the repo is git-tracked, show deck change history (cards added/removed over time)
-- [ ] **Backup/restore** — export all app data (collection, preferences, cache) as a single zip
+#### Collection
+- [ ] Binder view
+- [ ] Trade binder
+- [ ] Inventory scanner
+- [ ] Stats dashboard
 
-### Collection
-- [ ] **Binder view** — visual binder page layout (3x3 grid per page) for your full collection
-- [ ] **Trade binder** — mark cards as "for trade" and generate a trade list
-- [ ] **Inventory scanner** — paste TCGPlayer/Card Kingdom order confirmation → auto-add to collection
-- [ ] **Stats dashboard** — most expensive card, average deck cost, total collection value over time
+#### Proxy Workflow
+- [ ] MPC order builder
+- [ ] Proxy print sheet (PDF)
+- [ ] Proxy cost estimator
 
-### Proxy Workflow
-- [ ] **MPC order builder** — select cards to proxy → generate an MPC Autofill-compatible XML project file
-- [ ] **Proxy print sheet** — lay out selected card images in a printable 3x3 grid PDF (for home printing)
-- [ ] **Proxy cost estimator** — "Printing 108 cards on MPC ≈ $X at Y cardstock"
-
-### Integration
-- [ ] **Moxfield import** — paste a Moxfield deck URL → import the decklist
-- [ ] **Archidekt import** — same as above
-- [ ] **Scryfall syntax search** — support Scryfall's query syntax (e.g., `c:green cmc<3 t:creature`)
-- [ ] **EDHRec integration** — show card recommendations for your commander (if they have a public API)
+#### Integration
+- [ ] Scryfall syntax search
+- [ ] EDHRec integration
 
 ---
 
 ## API Reference
 
-### Scryfall (free, no auth)
+### Scryfall
 
 | Endpoint | Method | Use |
 |----------|--------|-----|
-| `/cards/named?fuzzy=<name>` | GET | Single card fuzzy lookup |
-| `/cards/named?exact=<name>` | GET | Exact name lookup |
-| `/cards/search?q=<query>` | GET | Full search with Scryfall syntax |
-| `/cards/<id>` | GET | Card by Scryfall ID |
-| `/cards/collection` | POST | Bulk lookup (up to 75 cards) |
+| `/cards/named?fuzzy=<name>` | GET | Fuzzy lookup |
+| `/cards/named?exact=<name>` | GET | Exact lookup |
+| `/cards/search?q=<query>` | GET | Full search |
+| `/cards/<id>` | GET | By Scryfall ID |
+| `/cards/collection` | POST | Bulk (max 75) |
 
-- Docs: https://scryfall.com/docs/api
-- Rate limit: 10 requests/second, be polite
-- Card images: `card.image_uris.normal` (488×680)
-- Prices included in card objects: `prices.usd`, `prices.usd_foil`, `prices.eur`
+- Rate limit: 10 req/sec
+- Images: `card.image_uris.normal` (488×680)
 
-### MPC Autofill (community-hosted, no auth)
+### MPC Autofill
 
 | Endpoint | Method | Use |
 |----------|--------|-----|
-| `/2/editorSearch/` | POST | Search community card art by name |
-| `/2/exploreSearch/` | POST | Browse/filter full image database |
-| `/2/cards/` | POST | Fetch card metadata by identifier (max 1000) |
-| `/2/sources/` | GET | List image sources (community contributors) |
-| `/2/DFCPairs/` | GET | Double-faced card pairings |
-| `/2/cardbacks/` | POST | Search card back designs |
-| `/2/languages/` | GET | Available languages |
-| `/2/tags/` | GET | Card tags/categories |
-| `/2/info/` | GET | Server metadata |
+| `/2/editorSearch/` | POST | Search art |
+| `/2/exploreSearch/` | POST | Browse images |
+| `/2/cards/` | POST | Fetch metadata |
+| `/2/sources/` | GET | List sources |
+| `/2/cardbacks/` | POST | Search backs |
 
-- Repo: https://github.com/chilli-axe/mpc-autofill
-- Frontend: https://mpcautofill.github.io
-- Backend: user-configured (each community hosts their own instance)
-- Images served via Cloudflare CDN: `<CDN>/images/google_drive/{small|large}/<identifier>.jpg`
-- Rate limit: 1 request per 100ms
-- Card identifiers = Google Drive file IDs
+- Rate limit: 1 req/100ms
 
 ---
 
 ## File Ownership
 
-### Collection Folder (user-selected, plain text, git-trackable)
+### Collection Folder (user-selected, plain text)
 
-| File/Directory | Owner | App behavior |
-|---------------|-------|-------------|
-| `decks/*/deck.txt` | User (plain text) | Read + write (when editing) |
-| `decks/*/info.md` | User (plain text) | Read + write |
-| `decks/*/wishlist.txt` | User (plain text) | Read + write |
-| `decks/*/images/` | User (manual) | Read only — user drops files here |
-| `wishlists/` | User (plain text) | Read + write |
-| `history/` | User (plain text) | Read only |
+| File/Directory | Behavior |
+|---------------|----------|
+| `decks/*/deck.txt` | Read + write |
+| `decks/*/info.md` | Read + write |
+| `decks/*/wishlist.txt` | Read + write |
+| `decks/*/images/` | Read only |
+| `wishlists/` | Read + write |
+| `history/` | Read only |
 
-### App Data (`%APPDATA%/mtg-db/`, generated, rebuildable)
+### App Data (`%APPDATA%/mtg-db/`)
 
-| File/Directory | Owner | App behavior |
-|---------------|-------|-------------|
-| `config.json` | App (generated) | Collection paths + preferences |
-| `cards.db` | App (generated) | SQLite cache — can be deleted and rebuilt |
-| `images/cache/` | App (generated) | Scryfall images — can be deleted and re-fetched |
-| `images/custom/` | User (manual) | Global image overrides — user drops files here |
-| `images/mpc/` | App (generated) | MPC Autofill cached art — can be deleted |
-| `collection.json` | App (generated) | Collection/ownership data — important, back up |
+| File/Directory | Behavior |
+|---------------|----------|
+| `config.json` | Generated |
+| `cards.db` | Generated, rebuildable |
+| `images/cache/` | Generated, rebuildable |
+| `images/custom/` | User manual |
+| `images/mpc/` | Generated, rebuildable |
+| `collection.json` | Generated, back up |
 
 ---
 
 ## Milestones
 
-| Milestone | What you get | Replaces |
-|-----------|-------------|----------|
-| **Phase 1 done** | Visual deck browser with card images, prices, sideboard support, search | Scryfall manual lookups |
-| **Phase 2 done** | Collection tracking, wishlists, proxy planning, overlap detection | `find-overlaps.sh`, `validate-decks.sh`, spreadsheets |
-| **Phase 3 done** | Advanced deck editor (Scryfall autocomplete, cross-deck moves, import, printing selection) | Remaining hand-editing edge cases |
-| **Phase 4 done** | Custom art, MPC Autofill proxy art browser | Manually saving images |
-| **Phase 5 done** | You've gone too far. Touch grass. Play some Commander. | Your social life |
+| Phase | Deliverable |
+|-------|-------------|
+| 1 | ✅ Visual deck browser with images, prices, search |
+| 2 | Collection tracking, wishlists, proxy planning, overlap detection |
+| 3 | Advanced editor with Scryfall autocomplete, cross-deck moves, import |
+| 4 | Custom art, MPC Autofill proxy art browser |
+| 5 | Additional polish features |

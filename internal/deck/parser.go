@@ -42,6 +42,7 @@ const (
 	TagCommander = "commander"
 	TagProxy     = "proxy"
 	TagWishlist  = "wishlist"
+	TagSideboard = "sideboard"
 )
 
 // HasTag returns true if the card has the given tag.
@@ -443,4 +444,70 @@ func LoadAllDecks(decksDir string) ([]Deck, error) {
 		decks = append(decks, deck)
 	}
 	return decks, nil
+}
+
+// FilterMainDeck returns cards that are NOT in the sideboard.
+func FilterMainDeck(cards []Card) []Card {
+	var result []Card
+	for _, c := range cards {
+		if !c.HasTag(TagSideboard) {
+			result = append(result, c)
+		}
+	}
+	return result
+}
+
+// FilterSideboard returns only cards that are in the sideboard.
+func FilterSideboard(cards []Card) []Card {
+	var result []Card
+	for _, c := range cards {
+		if c.HasTag(TagSideboard) {
+			result = append(result, c)
+		}
+	}
+	return result
+}
+
+// DeckValidationResult holds the result of validating a deck.
+type DeckValidationResult struct {
+	IsValid       bool     `json:"isValid"`
+	Errors        []string `json:"errors"`
+	WarningCount int      `json:"warningCount"`
+}
+
+// ValidateDeck checks if a deck is valid for Commander format.
+// It validates that the main deck (non-sideboard) has exactly 100 cards.
+// Commander cards COUNT toward the 100 card limit.
+func ValidateDeck(cards []Card) DeckValidationResult {
+	mainDeck := FilterMainDeck(cards)
+
+	// Count ALL non-sideboard cards (including commanders - they count toward 100)
+	totalCount := 0
+	for _, c := range mainDeck {
+		totalCount += c.Quantity
+	}
+
+	var errors []string
+
+	if totalCount < 100 {
+		errors = append(errors, fmt.Sprintf("Deck must have exactly 100 cards (currently %d)", totalCount))
+	} else if totalCount > 100 {
+		errors = append(errors, fmt.Sprintf("Deck must have exactly 100 cards (currently %d)", totalCount))
+	}
+
+	return DeckValidationResult{
+		IsValid:       len(errors) == 0,
+		Errors:        errors,
+		WarningCount:  0,
+	}
+}
+
+// GetNonSideboardCount returns the total count of non-sideboard cards.
+func GetNonSideboardCount(cards []Card) int {
+	mainDeck := FilterMainDeck(cards)
+	count := 0
+	for _, c := range mainDeck {
+		count += c.Quantity
+	}
+	return count
 }

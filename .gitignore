@@ -16,3 +16,17 @@ frontend/wailsjs
 # - images/cache/ (Scryfall images)
 # - images/mpc/ (MPC Autofill images)
 # These are all rebuildable and should not be committed
+
+# User data (personal decks, wishlists, scripts — not part of the source repo)
+%USERPROFILE%/
+
+# Local dev notes
+agent-feedback/
+
+# Axon knowledge graph index (local tooling, not source)
+.axon/
+
+# MCP config (local tooling)
+.mcp.json
+axon-serve.bat
+axon-serve.sh

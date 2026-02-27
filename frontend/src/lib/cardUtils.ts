@@ -3,6 +3,68 @@ import type { Card } from './types';
 // Basic land names (including Wastes from Future Sight)
 const BASIC_LANDS = ['plains', 'island', 'swamp', 'mountain', 'forest', 'wastes'];
 
+// Tag constants (must match Go backend)
+const TAG_SIDEBOARD = 'sideboard';
+const TAG_COMMANDER = 'commander';
+
+/**
+ * Check if a card is in the sideboard (not main deck).
+ */
+export function isSideboard(card: Card): boolean {
+  return (card.tags || []).includes(TAG_SIDEBOARD);
+}
+
+/**
+ * Filter cards that are NOT in the sideboard (main deck only).
+ */
+export function filterMainDeck(cards: Card[]): Card[] {
+  return cards.filter(c => !isSideboard(c));
+}
+
+/**
+ * Filter cards that ARE in the sideboard.
+ */
+export function filterSideboard(cards: Card[]): Card[] {
+  return cards.filter(c => isSideboard(c));
+}
+
+/**
+ * Get the total count of non-sideboard cards.
+ */
+export function getNonSideboardCount(cards: Card[]): number {
+  return filterMainDeck(cards).reduce((sum, c) => sum + c.quantity, 0);
+}
+
+/**
+ * Deck validation result.
+ */
+export interface DeckValidationResult {
+  valid: boolean;
+  errors: string[];
+}
+
+/**
+ * Validate a deck for Commander format.
+ * Main deck (non-sideboard) must have exactly 100 cards.
+ */
+export function isValidDeck(cards: Card[]): DeckValidationResult {
+  const mainDeck = filterMainDeck(cards);
+  const totalCount = mainDeck.reduce((sum, c) => sum + c.quantity, 0);
+
+  const errors: string[] = [];
+
+  if (totalCount < 100) {
+    errors.push(`Deck must have exactly 100 cards (currently ${totalCount})`);
+  } else if (totalCount > 100) {
+    errors.push(`Deck must have exactly 100 cards (currently ${totalCount})`);
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
+}
+
 /**
  * Fuzzy match text against a query.
  * Returns true if all query words appear in the text.
@@ -44,13 +106,18 @@ export function cardToText(card: Card): string {
 }
 
 /**
- * Sort cards: commanders first, then non-basic lands, then basic lands, then alphabetical.
+ * Sort cards: commanders first, then non-sideboard non-basic lands,
+ * then non-sideboard basic lands, then sideboard cards (at the end).
  */
 export function sortCards(cards: Card[]): Card[] {
   return [...cards].sort((a, b) => {
-    const aCmd = (a.tags || []).includes('commander');
-    const bCmd = (b.tags || []).includes('commander');
+    const aCmd = (a.tags || []).includes(TAG_COMMANDER);
+    const bCmd = (b.tags || []).includes(TAG_COMMANDER);
     if (aCmd !== bCmd) return aCmd ? -1 : 1;
+
+    const aSide = isSideboard(a);
+    const bSide = isSideboard(b);
+    if (aSide !== bSide) return aSide ? 1 : -1;
     
     const aBasic = isBasicLand(a.name);
     const bBasic = isBasicLand(b.name);
@@ -80,12 +147,15 @@ export function filterCards(cards: Card[], query: string): Card[] {
 }
 
 /**
- * Calculate total price of cards (excluding proxies).
+ * Calculate total price of cards (excluding proxies and sideboard).
  */
 export function calculateTotalPrice(cards: Card[]): number {
   return cards.reduce((sum, card) => {
+    // Skip proxies
     const isProxy = (card.tags || []).includes('proxy');
     if (isProxy) return sum;
+    // Skip sideboard cards (they're not part of the main deck price)
+    if (isSideboard(card)) return sum;
     const price = card.scryFall?.priceUsd ? parseFloat(card.scryFall.priceUsd) : 0;
     return sum + (price * card.quantity);
   }, 0);

@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "Bash(where axon 2>/dev/null || python -m axon --version 2>/dev/null || axon --version 2>/dev/null)"
+    ]
+  },
+  "enabledMcpjsonServers": [
+    "axon"
+  ],
+  "enableAllProjectMcpServers": true
+}

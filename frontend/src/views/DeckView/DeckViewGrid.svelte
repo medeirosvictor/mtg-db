@@ -1,8 +1,10 @@
 <script lang="ts">
   import type { Card } from '../../lib/types';
+  import { filterMainDeck, filterSideboard } from '../../lib/cardUtils';
   import { ToggleCardTag } from '../../../wailsjs/go/app/App';
   import CardGridItem from './CardGridItem.svelte';
   import WishlistSection from './WishlistSection.svelte';
+  import SideboardSection from './SideboardSection.svelte';
   import ContextMenu from '../../components/ContextMenu.svelte';
   import CardInspectModal from '../../components/CardInspectModal.svelte';
   import { createEventDispatcher } from 'svelte';
@@ -12,6 +14,11 @@
   export let wishlistCards: Card[];
   export let notFoundCards: Set<string>;
   export let slug: string;
+
+  // Derive main deck and sideboard from cards
+  $: mainDeckCards = filterMainDeck(cards);
+  $: sideboardCards = filterSideboard(cards);
+  $: mainDeckCount = mainDeckCards.reduce((sum, c) => sum + c.quantity, 0);
 
   const dispatch = createEventDispatcher<{
     cardUpdated: void;
@@ -56,6 +63,7 @@
     const isCommander = tags.includes('commander');
     const isProxy = tags.includes('proxy');
     const isWishlisted = tags.includes('wishlist');
+    const isSideboard = tags.includes('sideboard');
     const commanderCount = deck?.cards?.filter((c: Card) => (c.tags || []).includes('commander')).length || 0;
 
     menuItems = [
@@ -67,6 +75,12 @@
         action: () => toggleTag(card.name, 'commander'),
       },
       { separator: true },
+      {
+        label: isSideboard ? 'Move to Main Deck' : 'Move to Sideboard',
+        icon: '📋',
+        checked: isSideboard,
+        action: () => toggleTag(card.name, 'sideboard'),
+      },
       {
         label: isProxy ? 'Unmark as Proxy' : 'Mark as Proxy',
         icon: '🖨️',
@@ -86,9 +100,9 @@
 </script>
 
 <section>
-  <h2 class="text-base font-semibold mb-4 text-text-secondary">Cards ({cards.length} unique, {deck?.cardCount} total)</h2>
+  <h2 class="text-base font-semibold mb-4 text-text-secondary">Cards ({mainDeckCards.length} unique, {mainDeckCount} total)</h2>
   <div class="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-4">
-    {#each cards as card (card.name)}
+    {#each mainDeckCards as card (card.name)}
       <CardGridItem
         {card}
         isNotFound={isNotFound(card.name)}
@@ -102,6 +116,10 @@
     {/each}
   </div>
 </section>
+
+{#if sideboardCards.length > 0}
+  <SideboardSection cards={sideboardCards} />
+{/if}
 
 {#if wishlistCards.length > 0}
   <WishlistSection 

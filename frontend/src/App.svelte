@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import DeckList from './views/DeckList.svelte';
+  import DeckList from './views/DeckList/DeckList.svelte';
   import DeckView from './views/DeckView.svelte';
-  import CollectionPicker from './views/CollectionPicker.svelte';
+  import CollectionPicker from './views/CollectionPicker/CollectionPicker.svelte';
   import CollectionSwitcher from './components/CollectionSwitcher.svelte';
   import { GetAppState } from '../../wailsjs/go/app/App';
   import type { AppState, CollectionInfo } from './lib/types';
