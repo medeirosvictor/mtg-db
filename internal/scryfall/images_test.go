@@ -1,6 +1,8 @@
 package scryfall
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
@@ -129,18 +131,26 @@ func TestDownloadImage_CreatesDir(t *testing.T) {
 
 	nestedDir := filepath.Join(tmpDir, "nested", "path")
 
-	path, err := DownloadImage("", nestedDir, "Card")
-	// Empty URL should return empty path without trying to create dir for image
-	_ = path
-	_ = err
+	// Serve a fake image so DownloadImage has a real URL to follow
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/jpeg")
+		w.Write([]byte("fake jpeg data"))
+	}))
+	defer server.Close()
 
-	// Now test with a URL that would try to download — this requires HTTP mocking
-	// For unit test, just verify directory creation works:
-	if err := os.MkdirAll(nestedDir, 0755); err != nil {
-		t.Fatalf("mkdir failed: %v", err)
+	// Swap the package-level HTTP client so no real network call is made
+	orig := httpClient
+	httpClient = server.Client()
+	defer func() { httpClient = orig }()
+
+	_, err = DownloadImage(server.URL+"/card.jpg", nestedDir, "Card")
+	if err != nil {
+		t.Fatalf("DownloadImage failed: %v", err)
 	}
+
+	// DownloadImage itself must have created the nested directory
 	if _, err := os.Stat(nestedDir); os.IsNotExist(err) {
-		t.Error("nested dir should exist")
+		t.Error("DownloadImage should have created the nested directory")
 	}
 }
 

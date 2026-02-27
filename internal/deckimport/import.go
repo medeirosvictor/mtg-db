@@ -32,6 +32,7 @@ type ImportResult struct {
 // The deck ID is the last path segment of a moxfield.com/decks/<id> URL.
 
 var moxfieldURLRegex = regexp.MustCompile(`(?:https?://)?(?:www\.)?moxfield\.com/decks/([A-Za-z0-9_-]+)`)
+var moxfieldAPIBase = "https://api2.moxfield.com/v3/decks/all"
 
 type moxfieldDeck struct {
 	Name       string                       `json:"name"`
@@ -56,7 +57,7 @@ func ImportFromMoxfield(url string) ImportResult {
 	}
 	deckID := matches[1]
 
-	apiURL := fmt.Sprintf("https://api2.moxfield.com/v3/decks/all/%s", deckID)
+	apiURL := fmt.Sprintf("%s/%s", moxfieldAPIBase, deckID)
 	req, err := http.NewRequest("GET", apiURL, nil)
 	if err != nil {
 		return ImportResult{Error: fmt.Sprintf("Failed to create request: %v", err)}
@@ -108,6 +109,7 @@ func ImportFromMoxfield(url string) ImportResult {
 // The deck ID is a numeric value from archidekt.com/decks/<id>/...
 
 var archidektURLRegex = regexp.MustCompile(`(?:https?://)?(?:www\.)?archidekt\.com/decks/(\d+)`)
+var archidektAPIBase = "https://archidekt.com/api/decks"
 
 type archidektDeck struct {
 	Name  string            `json:"name"`
@@ -134,7 +136,7 @@ func ImportFromArchidekt(url string) ImportResult {
 	}
 	deckID := matches[1]
 
-	apiURL := fmt.Sprintf("https://archidekt.com/api/decks/%s/", deckID)
+	apiURL := fmt.Sprintf("%s/%s/", archidektAPIBase, deckID)
 	req, err := http.NewRequest("GET", apiURL, nil)
 	if err != nil {
 		return ImportResult{Error: fmt.Sprintf("Failed to create request: %v", err)}

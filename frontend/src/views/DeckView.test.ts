@@ -1,22 +1,34 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
+import { render } from '@testing-library/svelte';
+import DeckToolbar from './DeckView/DeckToolbar.svelte';
 
-// =====================
-// DeckView Default View Mode Test
-// =====================
-// Verify that the DeckView component defaults to grid view by checking the source.
-// This is a simple static analysis test — no DOM rendering needed.
+// DeckView initializes viewMode to 'grid' (see DeckView.svelte:28).
+// DeckToolbar is the component that renders the view-mode toggle, receiving
+// that value as a prop. Testing the toolbar with viewMode='grid' verifies the
+// behaviour the user observes: grid is marked as the active view.
 
-describe('DeckView defaults', () => {
-  it('should default to grid view mode in source', async () => {
-    // Read the actual source file to verify the default
-    const fs = await import('fs');
-    const path = await import('path');
-    const source = fs.readFileSync(
-      path.resolve(__dirname, 'DeckView.svelte'),
-      'utf-8'
-    );
-    // Must contain the grid default, not list
-    expect(source).toContain("let viewMode: 'list' | 'grid' = 'grid'");
-    expect(source).not.toContain("let viewMode: 'list' | 'grid' = 'list'");
+describe('DeckView view mode', () => {
+  it('shows grid as the active view when viewMode is grid', () => {
+    const { getByTitle } = render(DeckToolbar, {
+      props: { loading: false, scryfallLoading: false, viewMode: 'grid' },
+    });
+
+    const gridButton = getByTitle('Grid view');
+    const listButton = getByTitle('List view');
+
+    expect(gridButton.className).toContain('bg-accent');
+    expect(listButton.className).not.toContain('bg-accent');
+  });
+
+  it('shows list as the active view when viewMode is list', () => {
+    const { getByTitle } = render(DeckToolbar, {
+      props: { loading: false, scryfallLoading: false, viewMode: 'list' },
+    });
+
+    const listButton = getByTitle('List view');
+    const gridButton = getByTitle('Grid view');
+
+    expect(listButton.className).toContain('bg-accent');
+    expect(gridButton.className).not.toContain('bg-accent');
   });
 });

@@ -20,17 +20,24 @@ describe('StatusBadge', () => {
 
   it('should show dropdown when clicked', async () => {
     const { container } = render(StatusBadge, { props: { status: 'Owned' } });
-    
-    // Click the button to open dropdown
-    const button = container.querySelector('button');
-    if (button) {
-      await fireEvent.click(button);
-    }
-    
-    // Check if dropdown options are visible
-    expect(container.textContent).toContain('Owned');
-    expect(container.textContent).toContain('Planned');
-    expect(container.textContent).toContain('Disassembled');
+
+    // Before clicking: only the badge button is rendered, no dropdown options
+    const beforeButtons = container.querySelectorAll('button');
+    expect(beforeButtons.length).toBe(1);
+
+    await fireEvent.click(beforeButtons[0]);
+
+    // After clicking: badge button + one button per status option
+    const afterButtons = container.querySelectorAll('button');
+    expect(afterButtons.length).toBe(4); // 1 badge + 3 options
+
+    // All status options must be present in the dropdown buttons
+    const optionTexts = Array.from(afterButtons)
+      .slice(1)
+      .map((b) => b.textContent ?? '');
+    expect(optionTexts.some((t) => t.includes('Owned'))).toBe(true);
+    expect(optionTexts.some((t) => t.includes('Planned'))).toBe(true);
+    expect(optionTexts.some((t) => t.includes('Disassembled'))).toBe(true);
   });
 
   it('should emit change event when status is selected', async () => {

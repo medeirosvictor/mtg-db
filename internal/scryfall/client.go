@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -172,7 +173,8 @@ type CollectionResponse struct {
 
 // Client wraps HTTP operations for Scryfall API
 type Client struct {
-	http *http.Client
+	http    *http.Client
+	baseURL string // overrides BaseURL const; used in tests
 }
 
 // NewClient creates a new Scryfall API client
@@ -182,6 +184,13 @@ func NewClient() *Client {
 			Timeout: RequestTimeout,
 		},
 	}
+}
+
+func (c *Client) getBaseURL() string {
+	if c.baseURL != "" {
+		return c.baseURL
+	}
+	return BaseURL
 }
 
 // waitForRateLimit ensures we don't exceed Scryfall's rate limits
@@ -203,9 +212,9 @@ func (c *Client) waitForRateLimit() {
 func (c *Client) FetchCardByName(name string) (*Card, error) {
 	c.waitForRateLimit()
 
-	url := fmt.Sprintf("%s/cards/named?fuzzy=%s", BaseURL, name)
-	log.Printf("[Scryfall] GET %s", url)
-	req, err := http.NewRequest("GET", url, nil)
+	reqURL := fmt.Sprintf("%s/cards/named?fuzzy=%s", c.getBaseURL(), url.QueryEscape(name))
+	log.Printf("[Scryfall] GET %s", reqURL)
+	req, err := http.NewRequest("GET", reqURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -243,9 +252,9 @@ func (c *Client) FetchCardByName(name string) (*Card, error) {
 func (c *Client) FetchCardByExactName(name string) (*Card, error) {
 	c.waitForRateLimit()
 
-	url := fmt.Sprintf("%s/cards/named?exact=%s", BaseURL, name)
-	log.Printf("[Scryfall] GET %s", url)
-	req, err := http.NewRequest("GET", url, nil)
+	reqURL := fmt.Sprintf("%s/cards/named?exact=%s", c.getBaseURL(), url.QueryEscape(name))
+	log.Printf("[Scryfall] GET %s", reqURL)
+	req, err := http.NewRequest("GET", reqURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -375,7 +384,7 @@ func (c *Client) fetchChunk(names []string) ([]*Card, []string, error) {
 
 	log.Printf("[Scryfall] Identifiers count: %d", len(identifiers))
 
-	req, err := http.NewRequest("POST", BaseURL+"/cards/collection", bytes.NewReader(body))
+	req, err := http.NewRequest("POST", c.getBaseURL()+"/cards/collection", bytes.NewReader(body))
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create request: %w", err)
 	}

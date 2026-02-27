@@ -2,11 +2,20 @@
   "permissions": {
     "allow": [
       "WebFetch(domain:github.com)",
-      "Bash(where axon 2>/dev/null || python -m axon --version 2>/dev/null || axon --version 2>/dev/null)"
+      "Bash(where axon 2>/dev/null || python -m axon --version 2>/dev/null || axon --version 2>/dev/null)",
+      "Bash(go test:*)",
+      "Bash(cd frontend && npx vitest run src/views/DeckView.test.ts 2>&1)",
+      "Bash(tail:*)",
+      "Bash(grep:*)",
+      "Bash(cd \"C:/Users/Victor/Projects/mtg-db/frontend\" && npx vitest run src/views/DeckView.test.ts 2>&1)",
+      "Bash(go build:*)",
+      "Bash(go vet:*)",
+      "Bash(cd C:\\\\Users\\\\Victor\\\\Projects\\\\mtg-db\\\\frontend && npx vitest run src/components/StatusBadge.test.ts 2>&1)",
+      "Bash(cd /c/Users/Victor/Projects/mtg-db/frontend && npx vitest run src/components/StatusBadge.test.ts 2>&1)"
     ]
   },
+  "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "axon"
-  ],
-  "enableAllProjectMcpServers": true
+  ]
 }

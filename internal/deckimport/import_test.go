@@ -1,6 +1,9 @@
 package deckimport
 
 import (
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 )
 
@@ -9,6 +12,16 @@ import (
 // =====================
 
 func TestDetectAndImport_MoxfieldURL(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, `{"name":"Test Deck","mainboard":{"Lightning Bolt":{"quantity":4,"card":{"name":"Lightning Bolt"}}},"commanders":{},"sideboard":{}}`)
+	}))
+	defer srv.Close()
+
+	origBase := moxfieldAPIBase
+	moxfieldAPIBase = srv.URL
+	defer func() { moxfieldAPIBase = origBase }()
+
 	tests := []struct {
 		name  string
 		input string
@@ -23,17 +36,28 @@ func TestDetectAndImport_MoxfieldURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_ = DetectAndImport(tt.input)
-			// Should detect as moxfield (source will be empty if API fails)
-			// Just verify the regex matched
-			if !moxfieldURLRegex.MatchString(tt.input) {
-				t.Errorf("regex should match %q", tt.input)
+			result := DetectAndImport(tt.input)
+			if result.Error != "" {
+				t.Errorf("DetectAndImport(%q) returned error: %s", tt.input, result.Error)
+			}
+			if result.Source != "moxfield" {
+				t.Errorf("DetectAndImport(%q) source = %q, want %q", tt.input, result.Source, "moxfield")
 			}
 		})
 	}
 }
 
 func TestDetectAndImport_ArchidektURL(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, `{"name":"Test Deck","cards":[{"quantity":4,"card":{"oracleCard":{"name":"Lightning Bolt"}}}]}`)
+	}))
+	defer srv.Close()
+
+	origBase := archidektAPIBase
+	archidektAPIBase = srv.URL
+	defer func() { archidektAPIBase = origBase }()
+
 	tests := []struct {
 		name  string
 		input string
@@ -46,10 +70,12 @@ func TestDetectAndImport_ArchidektURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_ = DetectAndImport(tt.input)
-			// Just verify the regex matched
-			if !archidektURLRegex.MatchString(tt.input) {
-				t.Errorf("regex should match %q", tt.input)
+			result := DetectAndImport(tt.input)
+			if result.Error != "" {
+				t.Errorf("DetectAndImport(%q) returned error: %s", tt.input, result.Error)
+			}
+			if result.Source != "archidekt" {
+				t.Errorf("DetectAndImport(%q) source = %q, want %q", tt.input, result.Source, "archidekt")
 			}
 		})
 	}
@@ -180,15 +206,12 @@ func TestMoxfieldURLRegex(t *testing.T) {
 		{"moxfield.com/decks/abc-123_def", true},
 		{"archidekt.com/decks/123", false},
 		{"random.com/decks/abc", false},
-		// Note: these are edge cases - the regex matches substrings
-		// For proper validation, use full string matching in production
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
 			got := moxfieldURLRegex.MatchString(tt.input)
-			// Only check positive matches, negative tests are unreliable with substring matching
-			if tt.want && !got {
+			if got != tt.want {
 				t.Errorf("MatchString(%q) = %v, want %v", tt.input, got, tt.want)
 			}
 		})

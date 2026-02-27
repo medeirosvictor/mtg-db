@@ -165,20 +165,21 @@ func TestCard_FrontTypeLine(t *testing.T) {
 func newTestServer(handler http.HandlerFunc) (*httptest.Server, *Client) {
 	server := httptest.NewServer(handler)
 	client := &Client{
-		http: server.Client(),
+		http:    server.Client(),
+		baseURL: server.URL,
 	}
 	return server, client
 }
 
 func TestFetchCardByName_Success(t *testing.T) {
-	card := &Card{
+	want := &Card{
 		Name:     "Lightning Bolt",
 		ManaCost: "{R}",
 		CMC:      1.0,
 	}
 	resp := CardSearchResponse{
 		Object: "card",
-		Card:   card,
+		Card:   want,
 	}
 
 	server, client := newTestServer(func(w http.ResponseWriter, r *http.Request) {
@@ -196,29 +197,38 @@ func TestFetchCardByName_Success(t *testing.T) {
 	})
 	defer server.Close()
 
-	// Override the BaseURL for this test
-	origBase := BaseURL
-	// We can't easily override the const, so we test via the server URL
-	// The client.FetchCardByName uses BaseURL which is a const.
-	// Instead, test via fetchChunk which we can hit through the server.
-	_ = origBase
-	_ = client
-
-	// Direct test of the HTTP handler logic is covered,
-	// but the const BaseURL prevents full client testing without refactoring.
-	// So we verify the handler expectations above are met.
+	got, err := client.FetchCardByName("Lightning Bolt")
+	if err != nil {
+		t.Fatalf("FetchCardByName error: %v", err)
+	}
+	if got == nil {
+		t.Fatal("expected card, got nil")
+	}
+	if got.Name != want.Name {
+		t.Errorf("Name = %q, want %q", got.Name, want.Name)
+	}
+	if got.ManaCost != want.ManaCost {
+		t.Errorf("ManaCost = %q, want %q", got.ManaCost, want.ManaCost)
+	}
 }
 
 func TestFetchCardByName_NotFound(t *testing.T) {
-	server, _ := newTestServer(func(w http.ResponseWriter, r *http.Request) {
+	server, client := newTestServer(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	})
 	defer server.Close()
-	// Not-found returns (nil, nil) — tested through the const constraint.
+
+	got, err := client.FetchCardByName("Fake Card")
+	if err != nil {
+		t.Fatalf("unexpected error for 404: %v", err)
+	}
+	if got != nil {
+		t.Errorf("expected nil card for 404, got %+v", got)
+	}
 }
 
 func TestFetchChunk_BulkLookup(t *testing.T) {
-	cards := []*Card{
+	wantCards := []*Card{
 		{Name: "Sol Ring", CMC: 1},
 		{Name: "Lightning Bolt", CMC: 1},
 	}
@@ -226,7 +236,7 @@ func TestFetchChunk_BulkLookup(t *testing.T) {
 		{Name: "Fake Card"},
 	}
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server, client := newTestServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
 			t.Errorf("expected POST, got %s", r.Method)
 		}
@@ -243,7 +253,7 @@ func TestFetchChunk_BulkLookup(t *testing.T) {
 
 		resp := CollectionResponse{
 			Object:   "list",
-			Data:     cards,
+			Data:     wantCards,
 			NotFound: notFoundIds,
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -251,11 +261,17 @@ func TestFetchChunk_BulkLookup(t *testing.T) {
 	}))
 	defer server.Close()
 
-	// Create client pointing to test server (satisfy compiler)
-	_ = &Client{}
-
-	// We can't easily redirect the const BaseURL, but we can test fetchChunk
-	// by temporarily patching. Instead, let's test the name mapping logic directly.
+	names := []string{"Sol Ring", "Lightning Bolt", "Fake Card"}
+	cards, notFound, err := client.fetchChunk(names)
+	if err != nil {
+		t.Fatalf("fetchChunk error: %v", err)
+	}
+	if len(cards) != 2 {
+		t.Errorf("got %d cards, want 2", len(cards))
+	}
+	if len(notFound) != 1 || notFound[0] != "Fake Card" {
+		t.Errorf("notFound = %v, want [Fake Card]", notFound)
+	}
 }
 
 // =====================
