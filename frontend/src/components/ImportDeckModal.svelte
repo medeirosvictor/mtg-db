@@ -64,13 +64,13 @@
   on:keydown={(e) => e.key === 'Escape' && dispatch('close')}
 >
   <div 
-    class="bg-bg-secondary border border-border rounded-lg w-full max-w-[560px] shadow-2xl" 
+    class="bg-bg-secondary border-2 border-border rounded w-full max-w-[560px] shadow-2xl" 
     on:click|stopPropagation 
     role="dialog" 
     aria-modal="true"
   >
     <div class="flex items-center justify-between px-5 py-4 border-b border-border">
-      <h2 class="text-lg font-semibold m-0">📥 Import Deck</h2>
+      <h2 class="text-lg m-0">📥 Import Deck</h2>
       <button 
         class="bg-transparent border-none text-text-muted text-2xl cursor-pointer p-0 leading-none hover:text-text-primary"
         on:click={() => dispatch('close')}
@@ -79,19 +79,19 @@
 
     <div class="p-5">
       {#if success}
-        <div class="bg-green/10 border border-green/30 text-green px-4 py-3.5 rounded-lg text-sm text-center mb-4">{success}</div>
+        <div class="bg-green/10 border border-green/30 text-green px-4 py-3.5 rounded text-sm text-center mb-4">{success}</div>
         <div class="flex justify-end">
           <button 
-            class="px-4 py-2.5 bg-accent text-bg-primary rounded-lg text-sm font-semibold hover:bg-accent-hover transition-colors"
+            class="px-4 py-2.5 bg-accent text-bg-primary rounded text-sm hover:bg-accent-hover"
             on:click={() => dispatch('close')}
           >Done</button>
         </div>
       {:else}
         <div class="mb-4">
-          <label for="import-input" class="block text-sm font-semibold text-text-secondary mb-2">Paste a deck URL or card list</label>
+          <label for="import-input" class="block text-sm text-text-secondary mb-2">Paste a deck URL or card list</label>
           <textarea
             id="import-input"
-            class="w-full bg-bg-surface border border-border rounded-lg text-text-primary font-mono text-xs px-3 py-2.5 resize-y leading-relaxed focus:outline-none focus:border-accent placeholder:text-text-muted placeholder:font-inherit"
+            class="w-full bg-bg-surface border border-border rounded text-text-primary font-mono text-xs px-3 py-2.5 resize-y leading-relaxed focus:outline-none focus:border-accent placeholder:text-text-muted placeholder:font-inherit"
             bind:value={input}
             placeholder="Paste one of:&#10;&#10;• Moxfield URL: https://moxfield.com/decks/abc123&#10;• Archidekt URL: https://archidekt.com/decks/12345&#10;• Card list:&#10;  1x Sol Ring&#10;  1x Dark Ritual&#10;  3x Forest"
             rows="10"
@@ -103,10 +103,10 @@
         </div>
 
         <div class="mb-4">
-          <label class="block text-sm font-semibold text-text-secondary mb-2">Import mode</label>
+          <label class="block text-sm text-text-secondary mb-2">Import mode</label>
           <div class="flex gap-2">
             <button
-              class="flex-1 bg-bg-surface border rounded-lg px-3.5 py-2.5 cursor-pointer text-left font-inherit transition-all
+              class="flex-1 bg-bg-surface border rounded px-3.5 py-2.5 cursor-pointer text-left font-inherit
                 {mode === 'merge' ? 'border-accent bg-accent/10 text-text-primary' : 'border-border text-text-secondary hover:border-accent'}"
               on:click={() => mode = 'merge'}
               disabled={loading}
@@ -115,7 +115,7 @@
               <span class="text-xs {mode === 'merge' ? 'text-accent' : 'text-text-muted'}">Add to existing cards</span>
             </button>
             <button
-              class="flex-1 bg-bg-surface border rounded-lg px-3.5 py-2.5 cursor-pointer text-left font-inherit transition-all
+              class="flex-1 bg-bg-surface border rounded px-3.5 py-2.5 cursor-pointer text-left font-inherit
                 {mode === 'replace' ? 'border-accent bg-accent/10 text-text-primary' : 'border-border text-text-secondary hover:border-accent'}"
               on:click={() => mode = 'replace'}
               disabled={loading}
@@ -127,20 +127,20 @@
         </div>
 
         {#if error}
-          <div class="bg-red/10 border border-red/30 text-red px-3.5 py-2.5 rounded-lg text-sm mb-4">{error}</div>
+          <div class="bg-red/10 border border-red/30 text-red px-3.5 py-2.5 rounded text-sm mb-4">{error}</div>
         {/if}
 
         <div class="flex gap-3 justify-end">
           <button 
             type="button" 
-            class="px-4 py-2.5 bg-bg-surface text-text-primary border border-border rounded-lg text-sm font-semibold hover:bg-bg-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            class="px-4 py-2.5 bg-bg-surface text-text-primary border border-border rounded text-sm hover:bg-bg-hover disabled:opacity-50 disabled:cursor-not-allowed"
             on:click={() => dispatch('close')} 
             disabled={loading}
           >
             Cancel
           </button>
           <button 
-            class="px-4 py-2.5 bg-accent text-bg-primary rounded-lg text-sm font-semibold hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            class="px-4 py-2.5 bg-accent text-bg-primary rounded text-sm hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed"
             on:click={handleImport} 
             disabled={loading || !input.trim()}
           >

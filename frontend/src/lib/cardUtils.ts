@@ -29,43 +29,6 @@ export function filterSideboard(cards: Card[]): Card[] {
 }
 
 /**
- * Get the total count of non-sideboard cards.
- */
-export function getNonSideboardCount(cards: Card[]): number {
-  return filterMainDeck(cards).reduce((sum, c) => sum + c.quantity, 0);
-}
-
-/**
- * Deck validation result.
- */
-export interface DeckValidationResult {
-  valid: boolean;
-  errors: string[];
-}
-
-/**
- * Validate a deck for Commander format.
- * Main deck (non-sideboard) must have exactly 100 cards.
- */
-export function isValidDeck(cards: Card[]): DeckValidationResult {
-  const mainDeck = filterMainDeck(cards);
-  const totalCount = mainDeck.reduce((sum, c) => sum + c.quantity, 0);
-
-  const errors: string[] = [];
-
-  if (totalCount < 100) {
-    errors.push(`Deck must have exactly 100 cards (currently ${totalCount})`);
-  } else if (totalCount > 100) {
-    errors.push(`Deck must have exactly 100 cards (currently ${totalCount})`);
-  }
-
-  return {
-    valid: errors.length === 0,
-    errors,
-  };
-}
-
-/**
  * Fuzzy match text against a query.
  * Returns true if all query words appear in the text.
  */

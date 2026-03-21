@@ -288,6 +288,7 @@ func WriteDeckFile(path string, cards []Card) error {
 	return os.WriteFile(path, []byte(content), 0o644)
 }
 
+// TODO: Phase 3A - Granular tag control (currently ToggleCardTag in app_cardops.go does inline toggling)
 // SetCardTag adds or removes a tag on a card in a deck file.
 // Returns the updated list of cards.
 func SetCardTag(cards []Card, cardName string, tag string, enabled bool) []Card {
@@ -446,6 +447,7 @@ func LoadAllDecks(decksDir string) ([]Deck, error) {
 	return decks, nil
 }
 
+// TODO: Phase 2D - Server-side deck validation
 // FilterMainDeck returns cards that are NOT in the sideboard.
 func FilterMainDeck(cards []Card) []Card {
 	var result []Card
@@ -457,6 +459,7 @@ func FilterMainDeck(cards []Card) []Card {
 	return result
 }
 
+// TODO: Phase 2D - Server-side deck validation
 // FilterSideboard returns only cards that are in the sideboard.
 func FilterSideboard(cards []Card) []Card {
 	var result []Card
@@ -475,6 +478,7 @@ type DeckValidationResult struct {
 	WarningCount int      `json:"warningCount"`
 }
 
+// TODO: Phase 2D - Server-side deck validation
 // ValidateDeck checks if a deck is valid for Commander format.
 // It validates that the main deck (non-sideboard) has exactly 100 cards.
 // Commander cards COUNT toward the 100 card limit.
@@ -502,6 +506,7 @@ func ValidateDeck(cards []Card) DeckValidationResult {
 	}
 }
 
+// TODO: Phase 2D - Server-side deck validation
 // GetNonSideboardCount returns the total count of non-sideboard cards.
 func GetNonSideboardCount(cards []Card) int {
 	mainDeck := FilterMainDeck(cards)

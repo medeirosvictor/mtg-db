@@ -3,8 +3,6 @@ import {
   filterMainDeck,
   filterSideboard,
   sortCards,
-  isValidDeck,
-  getNonSideboardCount,
 } from '../lib/cardUtils';
 import type { Card } from '../lib/types';
 
@@ -76,129 +74,6 @@ describe('cardUtils - Sideboard Support', () => {
 
       expect(sideboard.length).toBe(1);
       expect(sideboard[0].name).toBe('Sol Ring');
-    });
-  });
-
-  describe('getNonSideboardCount', () => {
-    it('should count only non-sideboard cards', () => {
-      const cards: Card[] = [
-        { quantity: 1, name: 'Lightning Bolt' },
-        { quantity: 2, name: 'Sol Ring', tags: ['sideboard'] },
-        { quantity: 1, name: 'Counterspell', tags: ['sideboard'] },
-        { quantity: 3, name: 'Forest' },
-      ];
-
-      const count = getNonSideboardCount(cards);
-
-      // 1 + 3 = 4 (sideboard cards don't count, even with quantity > 1)
-      expect(count).toBe(4);
-    });
-
-    it('should return 0 for empty deck', () => {
-      const count = getNonSideboardCount([]);
-      expect(count).toBe(0);
-    });
-
-    it('should return 0 for all sideboard cards', () => {
-      const cards: Card[] = [
-        { quantity: 1, name: 'Sol Ring', tags: ['sideboard'] },
-        { quantity: 10, name: 'Counterspell', tags: ['sideboard'] },
-      ];
-
-      const count = getNonSideboardCount(cards);
-
-      expect(count).toBe(0);
-    });
-  });
-
-  describe('isValidDeck', () => {
-    it('should return valid for exactly 100 non-sideboard cards', () => {
-      const cards: Card[] = Array.from({ length: 100 }, (_, i) => ({
-        quantity: 1,
-        name: `Card ${i}`,
-      }));
-
-      const result = isValidDeck(cards);
-
-      expect(result.valid).toBe(true);
-      expect(result.errors).toHaveLength(0);
-    });
-
-    it('should return invalid for 99 cards', () => {
-      const cards: Card[] = Array.from({ length: 99 }, (_, i) => ({
-        quantity: 1,
-        name: `Card ${i}`,
-      }));
-
-      const result = isValidDeck(cards);
-
-      expect(result.valid).toBe(false);
-      expect(result.errors).toContain('Deck must have exactly 100 cards (currently 99)');
-    });
-
-    it('should return invalid for 101 cards', () => {
-      const cards: Card[] = Array.from({ length: 101 }, (_, i) => ({
-        quantity: 1,
-        name: `Card ${i}`,
-      }));
-
-      const result = isValidDeck(cards);
-
-      expect(result.valid).toBe(false);
-      expect(result.errors).toContain('Deck must have exactly 100 cards (currently 101)');
-    });
-
-    it('should ignore sideboard cards in count', () => {
-      // 100 main deck + 15 sideboard = valid
-      const cards: Card[] = [
-        ...Array.from({ length: 100 }, (_, i) => ({
-          quantity: 1,
-          name: `Main Card ${i}`,
-        })),
-        ...Array.from({ length: 15 }, (_, i) => ({
-          quantity: 1,
-          name: `Sideboard Card ${i}`,
-          tags: ['sideboard'] as const,
-        })),
-      ];
-
-      const result = isValidDeck(cards);
-
-      expect(result.valid).toBe(true);
-    });
-
-    it('should validate 99 main + sideboard = invalid', () => {
-      const cards: Card[] = [
-        ...Array.from({ length: 99 }, (_, i) => ({
-          quantity: 1,
-          name: `Main Card ${i}`,
-        })),
-        ...Array.from({ length: 20 }, (_, i) => ({
-          quantity: 1,
-          name: `Sideboard Card ${i}`,
-          tags: ['sideboard'] as const,
-        })),
-      ];
-
-      const result = isValidDeck(cards);
-
-      expect(result.valid).toBe(false);
-      expect(result.errors).toContain('Deck must have exactly 100 cards (currently 99)');
-    });
-
-    it('should handle commander tag (commander does not count toward 100)', () => {
-      // Commander is extra, so 1 commander + 99 regular = 100 valid
-      const cards: Card[] = [
-        { quantity: 1, name: 'Atraxa, Precipitous Vanguard', tags: ['commander'] },
-        ...Array.from({ length: 99 }, (_, i) => ({
-          quantity: 1,
-          name: `Card ${i}`,
-        })),
-      ];
-
-      const result = isValidDeck(cards);
-
-      expect(result.valid).toBe(true);
     });
   });
 

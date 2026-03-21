@@ -236,23 +236,23 @@
 </script>
 
 <section>
-  <h2 class="text-base font-semibold mb-3 text-text-secondary">Cards ({mainDeckCards.length} unique, {mainDeckCount} total)</h2>
+  <h2 class="text-base mb-3 text-text-secondary">Cards ({mainDeckCards.length} unique, {mainDeckCount} total)</h2>
   <div 
-    class="bg-bg-secondary border border-border rounded-lg overflow-hidden"
+    class="bg-bg-secondary border-2 border-border rounded overflow-hidden"
     on:contextmenu={(e) => {
       if (selectedCards.size > 0) {
         showSelectionContextMenu(e);
       }
     }}
   >
-    <div class="flex items-center px-4 py-2 bg-bg-surface text-xs font-semibold uppercase tracking-wide text-text-muted">
+    <div class="flex items-center px-4 py-2 bg-bg-surface text-xs uppercase tracking-wide text-text-muted">
       <span class="w-8 flex-shrink-0 flex justify-center">
         <input 
           type="checkbox" 
           checked={selectAll} 
           on:change={toggleSelectAll}
           title={selectAll ? 'Deselect all' : 'Select all'}
-          class="w-4 h-4 accent-accent"
+          class="cursor-pointer"
         />
       </span>
       <span class="w-10 flex-shrink-0">#</span>

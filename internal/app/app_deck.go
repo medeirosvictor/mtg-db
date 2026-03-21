@@ -4,13 +4,14 @@ import "app/internal/deck"
 
 // DeckSummary is a lightweight view of a deck for the dashboard.
 type DeckSummary struct {
-	Slug      string `json:"slug"`
-	Title     string `json:"title"`
-	Commander string `json:"commander"`
-	Colors    string `json:"colors"`
-	Status    string `json:"status"`
-	CardCount int    `json:"cardCount"`
-	Universe  string `json:"universe,omitempty"`
+	Slug              string `json:"slug"`
+	Title             string `json:"title"`
+	Commander         string `json:"commander"`
+	CommanderImageUri string `json:"commanderImageUri,omitempty"`
+	Colors            string `json:"colors"`
+	Status            string `json:"status"`
+	CardCount         int    `json:"cardCount"`
+	Universe          string `json:"universe,omitempty"`
 }
 
 // GetAllDecks returns summaries of all loaded decks (thread-safe).

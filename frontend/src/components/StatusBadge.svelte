@@ -36,7 +36,7 @@
 
 <div class="relative status-dropdown">
   <button 
-    class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wide cursor-pointer {badgeClass} hover:opacity-80 transition-opacity"
+    class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] uppercase tracking-wide cursor-pointer {badgeClass} hover:opacity-80"
     on:click|stopPropagation={toggleDropdown}
   >
     {status}
@@ -44,10 +44,10 @@
   </button>
 
   {#if open}
-    <div class="absolute top-full left-0 mt-1 bg-bg-secondary border border-border rounded-lg shadow-lg z-20 py-1 min-w-[120px]">
+    <div class="absolute top-full left-0 mt-1 bg-bg-secondary border border-border rounded shadow-lg z-50 py-1 min-w-[120px]">
       {#each statuses as s}
         <button 
-          class="w-full text-left px-3 py-1.5 text-xs font-semibold uppercase tracking-wide hover:bg-bg-hover transition-colors
+          class="w-full text-left px-3 py-1.5 text-xs uppercase tracking-wide hover:bg-bg-hover
             {s === status ? 'text-accent' : 'text-text-primary'}"
           on:click|stopPropagation={() => selectStatus(s)}
         >

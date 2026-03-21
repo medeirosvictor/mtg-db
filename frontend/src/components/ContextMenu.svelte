@@ -59,7 +59,7 @@
 
 {#if visible}
   <div
-    class="fixed z-50 min-w-[200px] bg-bg-secondary border border-border rounded-lg p-1 shadow-lg"
+    class="fixed z-50 min-w-[200px] bg-bg-secondary border-2 border-border rounded p-1 shadow-lg"
     style="top: {adjustedY}px; left: {adjustedX}px;"
     bind:this={menuEl}
   >
@@ -78,7 +78,7 @@
           {/if}
           <span class="flex-1">{item.label}</span>
           {#if item.checked}
-            <span class="text-accent font-bold text-sm">✓</span>
+            <span class="text-accent text-sm">✓</span>
           {/if}
         </button>
       {/if}

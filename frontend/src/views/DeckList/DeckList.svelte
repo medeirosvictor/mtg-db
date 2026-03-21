@@ -1,8 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import type { DeckSummary } from '../../lib/types';
-  import { GetAllDecks } from '../../../wailsjs/go/app/App';
+  import { fuzzyMatch } from '../../lib/cardUtils';
+  import { GetAllDecks, OpenDeckFolder } from '../../../wailsjs/go/app/App';
   import DeckCard from '../../components/DeckCard.svelte';
+  import ContextMenu from '../../components/ContextMenu.svelte';
   import ImportNewDeckModal from '../../components/ImportNewDeckModal.svelte';
   import { createEventDispatcher } from 'svelte';
 
@@ -12,12 +14,29 @@
   let loading = true;
   let error = '';
 
-  // Modal state
   let showImportModal = false;
 
-  // Search state
   let searchQuery = '';
   let searchInput: HTMLInputElement;
+
+  // Context menu state
+  let menuVisible = false;
+  let menuX = 0;
+  let menuY = 0;
+  let menuItems: any[] = [];
+
+  function showDeckContextMenu(e: MouseEvent, slug: string) {
+    menuX = e.clientX;
+    menuY = e.clientY;
+    menuItems = [
+      {
+        label: 'Open in file explorer',
+        icon: '📂',
+        action: () => OpenDeckFolder(slug),
+      },
+    ];
+    menuVisible = true;
+  }
 
   onMount(async () => {
     try {
@@ -42,23 +61,9 @@
     }
   }
 
-  function fuzzyMatch(text: string, query: string): boolean {
-    const lower = text.toLowerCase();
-    const q = query.toLowerCase();
-    const words = q.split(/\s+/).filter(w => w.length > 0);
-    return words.every(word => lower.includes(word));
-  }
-
   $: filteredDecks = searchQuery.trim()
     ? decks.filter(d => {
-        const haystack = [
-          d.title,
-          d.commander,
-          d.colors,
-          d.status,
-          d.universe || '',
-          d.slug,
-        ].join(' ');
+        const haystack = [d.title, d.commander, d.colors, d.status, d.universe || '', d.slug].join(' ');
         return fuzzyMatch(haystack, searchQuery);
       })
     : decks;
@@ -71,46 +76,42 @@
 <svelte:window on:keydown={handleKeydown} />
 
 <div class="flex-1 overflow-y-auto p-6 lg:p-8">
-  <header class="flex justify-between items-end mb-6 pb-4 border-b border-border">
-    <div>
-      <h1 class="text-[28px] font-bold">🃏 MTG Collection</h1>
-      <p class="text-text-secondary text-sm mt-1">Commander Decks & Collection Manager</p>
-    </div>
-    {#if !loading}
-      <div class="flex items-end gap-5">
+  {#if !loading}
+    <div class="flex justify-between items-center mb-5">
+      <div class="flex gap-5">
         {#if decks.length > 0}
-          <div class="flex gap-6">
+          <div class="flex gap-5">
             <div class="flex flex-col items-center gap-0.5">
-              <span class="text-[22px] font-bold text-accent">{decks.length}</span>
-              <span class="text-[11px] text-text-muted uppercase tracking-wide">Decks</span>
+              <span class="text-lg font-mono text-accent">{decks.length}</span>
+              <span class="text-[10px] text-text-muted uppercase tracking-wide">Decks</span>
             </div>
             <div class="flex flex-col items-center gap-0.5">
-              <span class="text-[22px] font-bold text-accent">{totalCards}</span>
-              <span class="text-[11px] text-text-muted uppercase tracking-wide">Cards</span>
+              <span class="text-lg font-mono text-accent">{totalCards}</span>
+              <span class="text-[10px] text-text-muted uppercase tracking-wide">Cards</span>
             </div>
             <div class="flex flex-col items-center gap-0.5">
-              <span class="text-[22px] font-bold text-green">{ownedDecks}</span>
-              <span class="text-[11px] text-text-muted uppercase tracking-wide">Owned</span>
+              <span class="text-lg font-mono text-green">{ownedDecks}</span>
+              <span class="text-[10px] text-text-muted uppercase tracking-wide">Owned</span>
             </div>
             <div class="flex flex-col items-center gap-0.5">
-              <span class="text-[22px] font-bold text-yellow">{plannedDecks}</span>
-              <span class="text-[11px] text-text-muted uppercase tracking-wide">Planned</span>
+              <span class="text-lg font-mono text-yellow">{plannedDecks}</span>
+              <span class="text-[10px] text-text-muted uppercase tracking-wide">Planned</span>
             </div>
           </div>
         {/if}
-        <button
-          class="whitespace-nowrap bg-bg-surface border border-border text-text-secondary px-4 py-2 rounded-lg text-sm font-semibold hover:bg-bg-hover hover:border-accent hover:text-accent transition-all"
-          on:click={() => showImportModal = true}
-          title="Import a new deck from URL or card list"
-        >
-          📥 Import Deck
-        </button>
       </div>
-    {/if}
-  </header>
+      <button
+        class="whitespace-nowrap bg-bg-surface border-2 border-border text-text-secondary px-4 py-2 rounded text-sm hover:bg-bg-hover hover:border-accent hover:text-accent"
+        on:click={() => showImportModal = true}
+        title="Import a new deck from URL or card list"
+      >
+        📥 Import Deck
+      </button>
+    </div>
+  {/if}
 
   {#if !loading && decks.length > 0}
-    <div class="flex items-center gap-2 bg-bg-secondary border border-border rounded-lg px-3.5 py-2 mb-5 transition-all focus-within:border-accent focus-within:shadow-[0_0_0_2px_rgba(137,180,250,0.15)]">
+    <div class="flex items-center gap-2 bg-bg-secondary border-2 border-border rounded px-3.5 py-2 mb-5 focus-within:border-accent">
       <span class="text-sm flex-shrink-0">🔍</span>
       <input
         type="text"
@@ -121,7 +122,7 @@
       />
       {#if searchQuery}
         <button
-          class="bg-transparent border-none text-text-muted cursor-pointer text-sm px-1.5 py-0.5 rounded hover:text-text-primary hover:bg-bg-hover flex-shrink-0 transition-colors"
+          class="bg-transparent border-none text-text-muted cursor-pointer text-sm px-1.5 py-0.5 rounded hover:text-text-primary hover:bg-bg-hover flex-shrink-0"
           on:click={() => { searchQuery = ''; searchInput?.focus(); }}
           title="Clear search"
         >✕</button>
@@ -147,11 +148,22 @@
   {:else}
     <div class="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
       {#each filteredDecks as deck (deck.slug)}
-        <DeckCard {deck} onClick={() => dispatch('navigate', { view: 'deck', slug: deck.slug })} />
+        <DeckCard
+          {deck}
+          onClick={() => dispatch('navigate', { view: 'deck', slug: deck.slug })}
+          on:contextmenu={(e) => showDeckContextMenu(e.detail, deck.slug)}
+        />
       {/each}
     </div>
   {/if}
 </div>
+
+<ContextMenu
+  bind:visible={menuVisible}
+  x={menuX}
+  y={menuY}
+  items={menuItems}
+/>
 
 {#if showImportModal}
   <ImportNewDeckModal

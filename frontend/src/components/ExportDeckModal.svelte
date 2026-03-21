@@ -71,13 +71,13 @@
   on:keydown={(e) => e.key === 'Escape' && dispatch('close')}
 >
   <div 
-    class="bg-bg-secondary border border-border rounded-lg w-full max-w-[560px] shadow-2xl" 
+    class="bg-bg-secondary border-2 border-border rounded w-full max-w-[560px] shadow-2xl" 
     on:click|stopPropagation 
     role="dialog" 
     aria-modal="true"
   >
     <div class="flex items-center justify-between px-5 py-4 border-b border-border">
-      <h2 class="text-lg font-semibold m-0">📤 Export Deck</h2>
+      <h2 class="text-lg m-0">📤 Export Deck</h2>
       <button 
         class="bg-transparent border-none text-text-muted text-2xl cursor-pointer p-0 leading-none hover:text-text-primary"
         on:click={() => dispatch('close')}
@@ -90,14 +90,14 @@
       {:else}
         <div class="flex items-center justify-between mb-3">
           {#if deckTitle}
-            <span class="text-sm font-semibold text-text-primary">{deckTitle}</span>
+            <span class="text-sm text-text-primary">{deckTitle}</span>
           {/if}
           <span class="text-xs text-text-muted">{lineCount} cards</span>
         </div>
 
         <div class="mb-4">
           <textarea
-            class="w-full bg-bg-surface border border-border rounded-lg text-text-primary font-mono text-xs px-3 py-2.5 resize-y leading-relaxed focus:outline-none focus:border-accent"
+            class="w-full bg-bg-surface border border-border rounded text-text-primary font-mono text-xs px-3 py-2.5 resize-y leading-relaxed focus:outline-none focus:border-accent"
             readonly
             value={deckText}
             rows="16"
@@ -106,20 +106,20 @@
 
         <div class="flex gap-2.5 justify-end">
           <button 
-            class="px-4 py-2.5 bg-bg-surface text-text-primary border border-border rounded-lg text-sm font-semibold hover:bg-bg-hover transition-colors"
+            class="px-4 py-2.5 bg-bg-surface text-text-primary border border-border rounded text-sm hover:bg-bg-hover"
             on:click={() => dispatch('close')}
           >
             Close
           </button>
           <button 
-            class="px-4 py-2.5 bg-bg-surface text-text-primary border border-border rounded-lg text-sm font-semibold hover:bg-bg-hover hover:border-accent transition-colors"
+            class="px-4 py-2.5 bg-bg-surface text-text-primary border border-border rounded text-sm hover:bg-bg-hover hover:border-accent"
             on:click={downloadTxt} 
             title="Download as .txt file"
           >
             💾 Download .txt
           </button>
           <button 
-            class="px-4 py-2.5 bg-accent text-bg-primary rounded-lg text-sm font-semibold hover:bg-accent-hover transition-colors"
+            class="px-4 py-2.5 bg-accent text-bg-primary rounded text-sm hover:bg-accent-hover"
             on:click={copyToClipboard} 
             title="Copy to clipboard"
           >

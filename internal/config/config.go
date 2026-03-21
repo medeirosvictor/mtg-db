@@ -207,6 +207,7 @@ func (c *Config) DecksDir() string {
 	return filepath.Join(c.File.ActiveCollection, "decks")
 }
 
+// TODO: Phase 2B - Wishlist & purchase planning
 // WishlistsDir returns the wishlists/ path inside the active collection.
 func (c *Config) WishlistsDir() string {
 	return filepath.Join(c.File.ActiveCollection, "wishlists")
@@ -217,16 +218,19 @@ func (c *Config) ImageCacheDir() string {
 	return filepath.Join(c.AppDataDir, "images", "cache")
 }
 
+// TODO: Phase 4A - Local image overrides
 // CustomImagesDir returns the path to user-provided global images (in app data).
 func (c *Config) CustomImagesDir() string {
 	return filepath.Join(c.AppDataDir, "images", "custom")
 }
 
+// TODO: Phase 4B - MPC Autofill proxy art
 // MPCImagesDir returns the path to MPC Autofill cached images (in app data).
 func (c *Config) MPCImagesDir() string {
 	return filepath.Join(c.AppDataDir, "images", "mpc")
 }
 
+// TODO: Phase 2A - Direct DB path access for collection management
 // DBPath returns the path to the SQLite database (in app data).
 func (c *Config) DBPath() string {
 	return filepath.Join(c.AppDataDir, "cards.db")

@@ -65,6 +65,7 @@ export namespace app {
 	    slug: string;
 	    title: string;
 	    commander: string;
+	    commanderImageUri?: string;
 	    colors: string;
 	    status: string;
 	    cardCount: number;
@@ -79,6 +80,7 @@ export namespace app {
 	        this.slug = source["slug"];
 	        this.title = source["title"];
 	        this.commander = source["commander"];
+	        this.commanderImageUri = source["commanderImageUri"];
 	        this.colors = source["colors"];
 	        this.status = source["status"];
 	        this.cardCount = source["cardCount"];

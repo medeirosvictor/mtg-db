@@ -100,7 +100,7 @@
 </script>
 
 <section>
-  <h2 class="text-base font-semibold mb-4 text-text-secondary">Cards ({mainDeckCards.length} unique, {mainDeckCount} total)</h2>
+  <h2 class="text-base mb-4 text-text-secondary">Cards ({mainDeckCards.length} unique, {mainDeckCount} total)</h2>
   <div class="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-4">
     {#each mainDeckCards as card (card.name)}
       <CardGridItem

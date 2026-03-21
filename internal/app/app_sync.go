@@ -5,6 +5,7 @@ import (
 	"app/internal/deck"
 	"app/internal/scryfall"
 	"log"
+	"os"
 	"path/filepath"
 	"strings"
 )
@@ -121,5 +122,49 @@ func (a *App) syncDeckCards(cards []deck.Card, deckSlug string) []string {
 
 	log.Printf("[Sync] Loaded Scryfall data for %d/%d cards", cachedCount, len(names))
 
+	// Cache commander image to deck folder
+	a.cacheCommanderImage(cards, deckSlug)
+
 	return notFoundNames
+}
+
+// cacheCommanderImage saves the commander's image to the deck's images/ folder.
+func (a *App) cacheCommanderImage(cards []deck.Card, deckSlug string) {
+	if a.config == nil || !a.config.HasActiveCollection() {
+		return
+	}
+
+	// Find the first commander with an image
+	for _, c := range cards {
+		if !c.HasTag(deck.TagCommander) {
+			continue
+		}
+		if c.Scryfall == nil || c.Scryfall.ImageURI == "" {
+			continue
+		}
+
+		deckImagesDir := filepath.Join(a.config.DecksDir(), deckSlug, "images")
+		destPath := filepath.Join(deckImagesDir, "commander.jpg")
+
+		// Skip if already cached locally
+		if fileExists(destPath) {
+			log.Printf("[Sync] Commander image already cached: %s", destPath)
+			return
+		}
+
+		// Download from Scryfall URL
+		_, err := scryfall.DownloadImage(c.Scryfall.ImageURI, deckImagesDir, "commander")
+		if err != nil {
+			log.Printf("[Sync] Commander image cache failed for %s: %v", c.Name, err)
+		} else {
+			log.Printf("[Sync] Cached commander image for %s → %s", c.Name, destPath)
+		}
+		return
+	}
+}
+
+// fileExists checks if a file exists at the given path.
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
 }

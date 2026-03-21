@@ -4,6 +4,7 @@ export interface DeckSummary {
   slug: string;
   title: string;
   commander: string;
+  commanderImageUri?: string;
   colors: string;
   status: string;
   cardCount: number;

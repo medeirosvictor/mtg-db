@@ -1,3 +1,4 @@
+<!-- TODO: Phase 3A - Modal for adding a single card or multiple cards via Scryfall autocomplete -->
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import { AddCards } from '../../wailsjs/go/app/App';
@@ -46,13 +47,13 @@
   on:keydown={(e) => e.key === 'Enter' && dispatch('close')}
 >
   <div 
-    class="bg-bg-secondary border border-border rounded-lg w-full max-w-[480px] shadow-2xl" 
+    class="bg-bg-secondary border-2 border-border rounded w-full max-w-[480px] shadow-2xl" 
     on:click|stopPropagation 
     role="dialog" 
     aria-modal="true"
   >
     <div class="flex items-center justify-between px-5 py-4 border-b border-border">
-      <h2 class="text-lg font-semibold m-0">Add Cards</h2>
+      <h2 class="text-lg m-0">Add Cards</h2>
       <button 
         class="bg-transparent border-none text-text-muted text-2xl cursor-pointer p-0 leading-none hover:text-text-primary"
         on:click={() => dispatch('close')}
@@ -61,10 +62,10 @@
 
     <form on:submit|preventDefault={handleSubmit} class="p-5">
       <div class="mb-4">
-        <label for="card-input" class="block text-sm font-semibold text-text-secondary mb-2">Enter cards (one per line)</label>
+        <label for="card-input" class="block text-sm text-text-secondary mb-2">Enter cards (one per line)</label>
         <textarea
           id="card-input"
-          class="w-full bg-bg-surface border border-border rounded-lg text-text-primary font-inherit text-sm px-3 py-2.5 resize-y focus:outline-none focus:border-accent placeholder:text-text-muted"
+          class="w-full bg-bg-surface border border-border rounded text-text-primary font-inherit text-sm px-3 py-2.5 resize-y focus:outline-none focus:border-accent placeholder:text-text-muted"
           bind:value={cardInput}
           placeholder="1x Sol Ring&#10;1x Dark Ritual&#10;3x Forest"
           rows="8"
@@ -74,13 +75,13 @@
       </div>
 
       {#if error}
-        <div class="bg-red/10 border border-red/30 text-red px-3.5 py-2.5 rounded-lg text-sm mb-4">{error}</div>
+        <div class="bg-red/10 border border-red/30 text-red px-3.5 py-2.5 rounded text-sm mb-4">{error}</div>
       {/if}
 
       <div class="flex gap-3 justify-end">
         <button 
           type="button" 
-          class="px-4 py-2.5 bg-bg-surface text-text-primary border border-border rounded-lg text-sm font-semibold hover:bg-bg-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          class="px-4 py-2.5 bg-bg-surface text-text-primary border border-border rounded text-sm hover:bg-bg-hover disabled:opacity-50 disabled:cursor-not-allowed"
           on:click={() => dispatch('close')} 
           disabled={loading}
         >
@@ -88,7 +89,7 @@
         </button>
         <button 
           type="submit" 
-          class="px-4 py-2.5 bg-accent text-bg-primary rounded-lg text-sm font-semibold hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          class="px-4 py-2.5 bg-accent text-bg-primary rounded text-sm hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={loading || !cardInput.trim()}
         >
           {loading ? 'Adding...' : 'Add Cards'}

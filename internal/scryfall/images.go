@@ -69,6 +69,7 @@ func DownloadImage(url, cacheDir, cardSlug string) (string, error) {
 	return filePath, nil
 }
 
+// TODO: Phase 4A - Used for local image override resolution chain
 // GetImagePath returns the path to a cached image, or empty string if not cached
 func GetImagePath(cacheDir, cardSlug string) string {
 	safeName := sanitizeFilename(cardSlug)
@@ -113,6 +114,7 @@ func sanitizeFilename(name string) string {
 	return name
 }
 
+// TODO: Phase 5 - Cache management UI
 // ClearImageCache removes all cached images
 func ClearImageCache(cacheDir string) error {
 	if _, err := os.Stat(cacheDir); os.IsNotExist(err) {

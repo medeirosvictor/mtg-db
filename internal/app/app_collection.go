@@ -3,6 +3,9 @@ package app
 import (
 	"app/internal/config"
 	"fmt"
+	"os/exec"
+	"path/filepath"
+	"runtime"
 
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -85,6 +88,30 @@ func (a *App) SwitchCollection(path string) string {
 func (a *App) RenameCollection(path, label string) string {
 	if err := a.config.SetCollectionLabel(path, label); err != nil {
 		return err.Error()
+	}
+	return ""
+}
+
+// OpenDeckFolder opens a deck's directory in the OS file explorer.
+func (a *App) OpenDeckFolder(slug string) string {
+	if a.config == nil || !a.config.HasActiveCollection() {
+		return "No active collection"
+	}
+
+	deckDir := filepath.Join(a.config.DecksDir(), slug)
+
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.Command("explorer", deckDir)
+	case "darwin":
+		cmd = exec.Command("open", deckDir)
+	default:
+		cmd = exec.Command("xdg-open", deckDir)
+	}
+
+	if err := cmd.Start(); err != nil {
+		return fmt.Sprintf("Failed to open folder: %v", err)
 	}
 	return ""
 }

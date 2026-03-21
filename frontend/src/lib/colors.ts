@@ -10,14 +10,6 @@ const emojiToColor: Record<string, MtgColor> = {
   '🟢': 'G',
 };
 
-const colorNames: Record<MtgColor, string> = {
-  W: 'White',
-  U: 'Blue',
-  B: 'Black',
-  R: 'Red',
-  G: 'Green',
-};
-
 const colorHex: Record<MtgColor, string> = {
   W: '#F9FAF4',
   U: '#0E68AB',
@@ -34,10 +26,6 @@ export function parseColors(colorString: string): MtgColor[] {
     }
   }
   return colors;
-}
-
-export function getColorName(color: MtgColor): string {
-  return colorNames[color];
 }
 
 export function getColorHex(color: MtgColor): string {

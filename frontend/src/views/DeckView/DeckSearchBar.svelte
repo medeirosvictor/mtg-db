@@ -11,7 +11,7 @@
   }
 </script>
 
-<div class="flex items-center gap-2 bg-bg-secondary border border-border rounded-lg px-3.5 py-2 my-3 transition-all focus-within:border-accent focus-within:shadow-[0_0_0_2px_rgba(137,180,250,0.15)]">
+<div class="flex items-center gap-2 bg-bg-secondary border-2 border-border rounded px-3.5 py-2 my-3 focus-within:border-accent">
   <span class="text-sm flex-shrink-0">🔍</span>
   <input
     type="text"
@@ -22,7 +22,7 @@
   />
   {#if searchQuery}
     <button 
-      class="bg-transparent border-none text-text-muted cursor-pointer text-sm px-1.5 py-0.5 rounded hover:text-text-primary hover:bg-bg-hover flex-shrink-0 transition-colors" 
+      class="bg-transparent border-none text-text-muted cursor-pointer text-sm px-1.5 py-0.5 rounded hover:text-text-primary hover:bg-bg-hover flex-shrink-0" 
       on:click={() => { searchQuery = ''; searchInput?.focus(); }} 
       title="Clear search"
     >✕</button>

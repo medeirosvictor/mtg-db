@@ -74,18 +74,18 @@
 
 <div class="relative">
   <button 
-    class="flex items-center gap-2 px-3 py-1.5 bg-bg-surface border border-border rounded-lg text-text-primary font-inherit text-sm hover:bg-bg-hover hover:border-accent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+    class="flex items-center gap-2 px-3 py-1.5 bg-bg-surface border-2 border-border rounded text-text-primary font-inherit text-sm hover:bg-bg-hover hover:border-accent disabled:opacity-50 disabled:cursor-not-allowed"
     on:click|stopPropagation={toggleDropdown} 
     disabled={loading}
   >
     <span class="text-sm">📁</span>
-    <span class="font-semibold max-w-[200px] overflow-hidden text-ellipsis whitespace-nowrap">{activeLabel || 'Collection'}</span>
+    <span class="max-w-[200px] overflow-hidden text-ellipsis whitespace-nowrap">{activeLabel || 'Collection'}</span>
     <span class="text-[10px] text-text-muted transition-transform {open ? 'rotate-180' : ''}">▾</span>
   </button>
 
   {#if open}
     <div 
-      class="absolute top-full left-0 mt-1 min-w-[280px] bg-bg-secondary border border-border rounded-lg shadow-lg z-10 p-1" 
+      class="absolute top-full left-0 mt-1 min-w-[280px] bg-bg-secondary border-2 border-border rounded shadow-lg z-10 p-1" 
       role="menu" 
       tabindex="-1" 
       on:click|stopPropagation 
@@ -93,7 +93,7 @@
     >
       {#if otherCollections.length > 0}
         <div class="py-1">
-          <div class="px-3.5 py-1.5 text-[11px] font-semibold text-text-muted uppercase tracking-wide">Switch Collection</div>
+          <div class="px-3.5 py-1.5 text-[11px] text-text-muted uppercase tracking-wide">Switch Collection</div>
           {#each otherCollections as col}
             <button 
               class="flex flex-col items-start w-full px-3.5 py-2 border-none bg-transparent text-text-primary font-inherit text-sm cursor-pointer text-left hover:bg-bg-hover"

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"app/internal/db"
 	"app/internal/deck"
 	"fmt"
 	"os"
@@ -253,15 +254,47 @@ func (a *App) getAllDecksUnsafe() []DeckSummary {
 	var summaries []DeckSummary
 	for _, d := range a.decks {
 		status := normalizeStatus(d.Info.Status)
+		commanderImage := a.lookupCommanderImage(d)
 		summaries = append(summaries, DeckSummary{
-			Slug:      d.Slug,
-			Title:     d.Info.Title,
-			Commander: d.Info.Commander,
-			Colors:    d.Info.Colors,
-			Status:    status,
-			CardCount: d.CardCount,
-			Universe:  d.Info.Universe,
+			Slug:              d.Slug,
+			Title:             d.Info.Title,
+			Commander:         d.Info.Commander,
+			CommanderImageUri: commanderImage,
+			Colors:            d.Info.Colors,
+			Status:            status,
+			CardCount:         d.CardCount,
+			Universe:          d.Info.Universe,
 		})
 	}
 	return summaries
+}
+
+// lookupCommanderImage finds the cached image URI for the first commander in a deck.
+func (a *App) lookupCommanderImage(d deck.Deck) string {
+	// First try cards tagged as commander
+	commanders := deck.GetCommanders(d.Cards)
+	if len(commanders) == 0 {
+		// Fall back to the commander name from info.md
+		if d.Info.Commander != "" {
+			commanders = []string{d.Info.Commander}
+		}
+	}
+	if len(commanders) == 0 {
+		return ""
+	}
+
+	// Check if the card already has Scryfall data loaded
+	for _, c := range d.Cards {
+		if c.HasTag(deck.TagCommander) && c.Scryfall != nil && c.Scryfall.ImageURI != "" {
+			return c.Scryfall.ImageURI
+		}
+	}
+
+	// Look up from the DB cache
+	cached, err := db.GetCard(commanders[0])
+	if err == nil && cached != nil && cached.ImageURI != "" {
+		return cached.ImageURI
+	}
+
+	return ""
 }

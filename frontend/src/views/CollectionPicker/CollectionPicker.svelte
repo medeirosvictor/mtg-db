@@ -81,11 +81,11 @@
 <div class="flex items-center justify-center min-h-screen p-8">
   <div class="max-w-[540px] w-full text-center">
     <div class="text-6xl mb-4">🃏</div>
-    <h1 class="text-[28px] font-bold mb-2">MTG Collection Manager</h1>
+    <h1 class="text-[28px] mb-2">MTG Collection Manager</h1>
     <p class="text-text-secondary mb-8">Choose a collection folder to get started</p>
 
     {#if invalidPath}
-      <div class="flex gap-3 text-left p-4 bg-yellow/10 border border-yellow/25 rounded-lg mb-6">
+      <div class="flex gap-3 text-left p-4 bg-yellow/10 border border-yellow/25 rounded mb-6">
         <span class="text-xl flex-shrink-0">⚠️</span>
         <div>
           <strong class="text-yellow">Collection not found</strong>
@@ -96,7 +96,7 @@
     {/if}
 
     {#if error}
-      <div class="flex gap-3 text-left p-4 bg-red/10 border border-red/25 rounded-lg mb-6">
+      <div class="flex gap-3 text-left p-4 bg-red/10 border border-red/25 rounded mb-6">
         <span class="text-xl flex-shrink-0">❌</span>
         <div>
           <strong class="text-red">Invalid folder</strong>
@@ -108,7 +108,7 @@
 
     <div class="flex flex-col gap-3 mb-8">
       <button
-        class="flex items-center justify-center gap-2.5 px-6 py-3.5 bg-accent text-bg-primary rounded-lg text-[15px] font-semibold hover:bg-accent-hover transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        class="flex items-center justify-center gap-2.5 px-6 py-3.5 bg-accent text-bg-primary rounded text-[15px] hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed"
         on:click={selectExisting}
         disabled={loading}
       >
@@ -116,7 +116,7 @@
         Open Collection Folder
       </button>
       <button
-        class="flex items-center justify-center gap-2.5 px-6 py-3.5 bg-bg-surface text-text-primary border border-border rounded-lg text-[15px] font-semibold hover:bg-bg-hover hover:border-accent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        class="flex items-center justify-center gap-2.5 px-6 py-3.5 bg-bg-surface text-text-primary border-2 border-border rounded text-[15px] hover:bg-bg-hover hover:border-accent disabled:opacity-50 disabled:cursor-not-allowed"
         on:click={initializeNew}
         disabled={loading}
       >
@@ -127,19 +127,19 @@
 
     {#if validCollections.length > 0}
       <div class="text-left mb-8">
-        <h3 class="text-sm font-semibold text-text-muted uppercase tracking-wide mb-3">Recent Collections</h3>
+        <h3 class="text-sm text-text-muted uppercase tracking-wide mb-3">Recent Collections</h3>
         <div class="flex flex-col gap-2">
           {#each validCollections as col}
             <div class="flex items-center gap-1">
               <button
-                class="flex-1 flex flex-col items-start p-3 bg-bg-secondary border border-border rounded-lg hover:bg-bg-hover hover:border-accent transition-all cursor-pointer"
+                class="flex-1 flex flex-col items-start p-3 bg-bg-secondary border-2 border-border rounded hover:bg-bg-hover hover:border-accent cursor-pointer"
                 on:click={() => switchTo(col.path)}
               >
-                <span class="text-sm font-semibold">{col.label}</span>
+                <span class="text-sm">{col.label}</span>
                 <span class="text-xs text-text-muted mt-0.5 break-all">{col.path}</span>
               </button>
               <button
-                class="w-8 h-8 flex items-center justify-center bg-transparent border border-transparent rounded-lg text-text-muted hover:bg-red/10 hover:border-red/30 hover:text-red transition-all text-lg"
+                class="w-8 h-8 flex items-center justify-center bg-transparent border border-transparent rounded text-text-muted hover:bg-red/10 hover:border-red/30 hover:text-red text-lg"
                 title="Remove from list"
                 on:click|stopPropagation={() => removeCollection(col.path)}
               >×</button>
@@ -149,7 +149,7 @@
       </div>
     {/if}
 
-    <div class="text-left p-4 bg-bg-secondary border border-border rounded-lg">
+    <div class="text-left p-4 bg-bg-secondary border border-border rounded">
       <p class="text-xs text-text-muted mb-2">A collection folder should look like:</p>
       <pre class="text-xs text-text-secondary bg-bg-surface p-3 rounded-md overflow-x-auto leading-relaxed">my-collection/
   decks/

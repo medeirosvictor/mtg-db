@@ -38,19 +38,19 @@
       <div class="flex gap-1.5 items-center">
         <input
           type="text"
-          class="flex-1 bg-bg-surface border border-accent rounded-lg text-text-primary font-mono text-sm px-2.5 py-1.5 outline-none focus:ring-2 focus:ring-accent/25"
+          class="flex-1 bg-bg-surface border-2 border-accent rounded text-text-primary font-mono text-sm px-2.5 py-1.5 outline-none"
           bind:value={editValue}
           on:keydown={(e) => dispatch('editKeydown', e)}
           autofocus
         />
         <div class="flex gap-1">
           <button 
-            class="w-7 h-7 bg-bg-surface border border-border text-text-secondary rounded-lg cursor-pointer text-sm flex items-center justify-center hover:bg-green/15 hover:border-green hover:text-green"
+            class="w-7 h-7 bg-bg-surface border border-border text-text-secondary rounded cursor-pointer text-sm flex items-center justify-center hover:bg-green/15 hover:border-green hover:text-green"
             on:click={() => dispatch('editSave')} 
             title="Save (Enter)"
           >✓</button>
           <button 
-            class="w-7 h-7 bg-bg-surface border border-border text-text-secondary rounded-lg cursor-pointer text-sm flex items-center justify-center hover:bg-red/15 hover:border-red hover:text-red"
+            class="w-7 h-7 bg-bg-surface border border-border text-text-secondary rounded cursor-pointer text-sm flex items-center justify-center hover:bg-red/15 hover:border-red hover:text-red"
             on:click={() => dispatch('editCancel')} 
             title="Cancel (Esc)"
           >✕</button>
@@ -63,9 +63,9 @@
   </div>
 {:else}
   <div
-    class="flex items-center px-4 py-1.5 border-b border-border last:border-b-0 transition-colors duration-100
+    class="flex items-center px-4 py-1.5 border-b border-border last:border-b-0 duration-100
       {isBasicLand ? 'text-text-muted' : ''}
-      {isCommander ? 'bg-mauve/5 hover:bg-mauve/10' : ''}
+      {isCommander ? 'bg-yellow/5 hover:bg-yellow/10' : ''}
       {isNotFound ? 'bg-red/5 hover:bg-red/10' : ''}
       {isSelected ? 'bg-accent/10 hover:bg-accent/15' : ''}
       {!isCommander && !isNotFound && !isSelected ? 'hover:bg-bg-hover' : ''}"
@@ -80,11 +80,11 @@
         checked={isSelected} 
         on:change={() => dispatch('select')}
         on:click|stopPropagation
-        class="w-4 h-4 accent-accent cursor-pointer"
+        class="cursor-pointer"
       />
     </span>
     <span class="w-10 flex-shrink-0 text-text-muted">{card.quantity}×</span>
-    <span class="flex-1 min-w-0 {isNotFound ? 'text-red font-semibold' : ''}">
+    <span class="flex-1 min-w-0 {isNotFound ? 'text-red' : ''}">
       {#if isNotFound}
         <span class="text-xs mr-1" title="Card not found on Scryfall">⚠️</span>
       {/if}
@@ -102,8 +102,8 @@
     </span>
     <span class="w-48 flex-shrink-0 flex gap-1 flex-wrap">
       {#each getBadges(card) as badge}
-        <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide
-          {badge === 'commander' ? 'bg-mauve/15 text-mauve' : ''}
+        <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wide
+          {badge === 'commander' ? 'bg-yellow/15 text-yellow' : ''}
           {badge === 'proxy' ? 'bg-yellow/15 text-yellow' : ''}
           {badge === 'wishlist' ? 'bg-accent/15 text-accent' : ''}
         ">
@@ -114,7 +114,7 @@
         </span>
       {/each}
     </span>
-    <span class="w-16 flex-shrink-0 text-right text-green text-xs font-semibold">
+    <span class="w-16 flex-shrink-0 text-right text-green text-xs">
       {#if (card.tags || []).includes('proxy')}
         <span class="text-text-muted italic font-normal" title="Proxy — price not tracked">—</span>
       {:else}

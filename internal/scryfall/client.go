@@ -208,6 +208,7 @@ func (c *Client) waitForRateLimit() {
 	rateLimiter <- struct{}{}
 }
 
+// TODO: Phase 3A - Single card lookup for Scryfall autocomplete
 // FetchCardByName fetches a single card by name (fuzzy match)
 func (c *Client) FetchCardByName(name string) (*Card, error) {
 	c.waitForRateLimit()
@@ -248,6 +249,7 @@ func (c *Client) FetchCardByName(name string) (*Card, error) {
 	return result.Card, nil
 }
 
+// TODO: Phase 3A - Exact name lookup for Scryfall autocomplete
 // FetchCardByExactName fetches a single card by exact name match
 func (c *Client) FetchCardByExactName(name string) (*Card, error) {
 	c.waitForRateLimit()

@@ -1,4 +1,14 @@
 /** @type {import('tailwindcss').Config} */
+
+function withOpacity(varName) {
+  return ({ opacityValue }) => {
+    if (opacityValue !== undefined) {
+      return `rgb(var(${varName}) / ${opacityValue})`;
+    }
+    return `rgb(var(${varName}))`;
+  };
+}
+
 export default {
   content: [
     './index.html',
@@ -7,25 +17,25 @@ export default {
   theme: {
     extend: {
       colors: {
-        'bg-primary': '#11111b',
-        'bg-secondary': '#1e1e2e',
-        'bg-surface': '#282840',
-        'bg-hover': '#313150',
-        'text-primary': '#cdd6f4',
-        'text-secondary': '#a6adc8',
-        'text-muted': '#6c7086',
-        'accent': '#89b4fa',
-        'accent-hover': '#74c7ec',
-        'green': '#a6e3a1',
-        'yellow': '#f9e2af',
-        'red': '#f38ba8',
-        'orange': '#fab387',
-        'mauve': '#cba6f7',
-        'border': '#45475a',
+        'bg-primary': withOpacity('--bg-primary'),
+        'bg-secondary': withOpacity('--bg-secondary'),
+        'bg-surface': withOpacity('--bg-surface'),
+        'bg-hover': withOpacity('--bg-hover'),
+        'text-primary': withOpacity('--text-primary'),
+        'text-secondary': withOpacity('--text-secondary'),
+        'text-muted': withOpacity('--text-muted'),
+        'accent': withOpacity('--accent'),
+        'accent-hover': withOpacity('--accent-hover'),
+        'green': withOpacity('--green'),
+        'yellow': withOpacity('--yellow'),
+        'red': withOpacity('--red'),
+        'orange': withOpacity('--orange'),
+        'mauve': withOpacity('--mauve'),
+        'border': withOpacity('--border'),
       },
       borderRadius: {
-        'DEFAULT': '8px',
-        'lg': '12px',
+        'DEFAULT': '3px',
+        'lg': '5px',
       },
     },
   },

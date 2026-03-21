@@ -78,11 +78,11 @@
           bind:value={titleInput}
           on:blur={saveTitle}
           on:keydown={handleTitleKeydown}
-          class="text-2xl font-bold bg-bg-surface border border-accent rounded-lg px-2 py-1 text-text-primary outline-none"
+          class="text-2xl bg-bg-surface border-2 border-accent rounded px-2 py-1 text-text-primary outline-none"
         />
       {:else}
         <h1 
-          class="text-2xl font-bold cursor-pointer hover:text-accent transition-colors"
+          class="text-2xl cursor-pointer hover:text-accent transition-colors"
           on:click={startEditTitle}
           title="Click to edit title"
         >
@@ -97,10 +97,10 @@
     <div class="flex items-center gap-4 flex-wrap">
       <ColorPips colors={deck.info.colors} />
       <span class="text-sm text-text-secondary">Commander: <strong class="text-accent">{displayCommander}</strong></span>
-      <span class="text-sm {deck.cardCount !== 100 ? 'text-yellow' : 'text-green'} font-semibold">
+      <span class="text-sm {deck.cardCount !== 100 ? 'text-yellow' : 'text-green'}">
         {deck.cardCount} cards
       </span>
-      <span class="text-sm text-green font-semibold">
+      <span class="text-sm text-green">
         ${totalPrice.toFixed(2)}
       </span>
     </div>
@@ -111,7 +111,7 @@
           bind:value={strategyInput}
           on:blur={saveStrategy}
           on:keydown={handleStrategyKeydown}
-          class="w-full max-w-[800px] bg-bg-surface border border-accent rounded-lg px-3 py-2 text-sm text-text-secondary outline-none resize-y min-h-[60px]"
+          class="w-full max-w-[800px] bg-bg-surface border-2 border-accent rounded px-3 py-2 text-sm text-text-secondary outline-none resize-y min-h-[60px]"
           placeholder="Add a strategy description..."
         ></textarea>
         <p class="text-xs text-text-muted mt-1">Press Esc to cancel</p>

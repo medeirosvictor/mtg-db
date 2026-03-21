@@ -7,7 +7,7 @@
     calculateTotalPrice, 
     getCommanderNames 
   } from '../lib/cardUtils';
-  import { GetDeck, GetDeckBasic, UpdateDeckInfo, UpdateDeckStatus } from '../../wailsjs/go/app/App';
+  import { GetDeck, GetDeckBasic, UpdateDeckInfo, UpdateDeckStatus, OpenDeckFolder } from '../../wailsjs/go/app/App';
   import DeckHeader from './DeckView/DeckHeader.svelte';
   import DeckToolbar from './DeckView/DeckToolbar.svelte';
   import DeckSearchBar from './DeckView/DeckSearchBar.svelte';
@@ -186,20 +186,13 @@
     </div>
   {:else if error}
     <div class="text-center py-16">
-      <div class="bg-red/10 border border-red/30 text-red px-4 py-4 rounded-lg mb-4">{error}</div>
+      <div class="bg-red/10 border border-red/30 text-red px-4 py-4 rounded mb-4">{error}</div>
       <button 
-        class="bg-accent text-bg-primary border-none px-5 py-2.5 rounded-lg text-sm font-semibold cursor-pointer hover:bg-accent-hover"
+        class="bg-accent text-bg-primary border-none px-5 py-2.5 rounded text-sm cursor-pointer hover:bg-accent-hover"
         on:click={loadDeck}
       >Try Again</button>
     </div>
   {:else if deck}
-    <button 
-      class="bg-transparent border border-border text-text-secondary px-3.5 py-1.5 rounded-lg text-sm mb-4 font-inherit cursor-pointer hover:bg-bg-surface hover:text-text-primary"
-      on:click={() => dispatch('navigate', { view: 'home' })}
-    >
-      ← Back
-    </button>
-
     <DeckHeader 
       {deck} 
       {totalPrice} 
@@ -216,6 +209,7 @@
       on:import={() => showImportModal = true}
       on:export={() => showExportModal = true}
       on:sync={syncScryfall}
+      on:openFolder={() => OpenDeckFolder(slug)}
       on:viewChange={(e) => viewMode = e.detail}
     />
 
@@ -227,7 +221,7 @@
     />
 
     {#if notFoundCards.size > 0}
-      <div class="bg-red/10 border border-red/30 text-red px-4 py-2.5 rounded-lg text-sm mb-4">
+      <div class="bg-red/10 border border-red/30 text-red px-4 py-2.5 rounded text-sm mb-4">
         ⚠️ {notFoundCards.size} card{notFoundCards.size > 1 ? 's' : ''} not found on Scryfall. Check card names highlighted in red below.
       </div>
     {/if}

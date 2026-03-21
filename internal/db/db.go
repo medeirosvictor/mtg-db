@@ -413,6 +413,7 @@ func AddUnmatchedCard(name, deckSlug string) error {
 	return err
 }
 
+// TODO: Phase 2D - Display unmatched cards in deck validation UI
 // GetUnmatchedCards retrieves all unmatched cards for a deck
 func GetUnmatchedCards(deckSlug string) ([]string, error) {
 	dbMu.RLock()
